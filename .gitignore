@@ -1,0 +1,9 @@
+# Arquivos gerados pelo Maven e pelo Java
+**/target/
+*.class
+*.log
+
+# Configurações locais do IntelliJ; as configurações compartilhadas estão em .run/
+.idea/
+*.iml
+out/

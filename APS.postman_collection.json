@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "APS - Ingestao ambiental",
+    "description": "Inicie as três APIs no IntelliJ com JDK 17. Cada requisição envia uma leitura e deve receber HTTP 200. Endereços locais, sem autenticação.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Manancial",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"area\": \"AREA-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"percentual_ocupado\": 35.5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "http://127.0.0.1:8081/leituras"
+      },
+      "response": []
+    },
+    {
+      "name": "Alagamento",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sensor\": \"SENSOR-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"nivel_corrego_cm\": 120\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "http://127.0.0.1:8082/leituras"
+      },
+      "response": []
+    },
+    {
+      "name": "Inversao Termica",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estacao\": \"ESTACAO-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"umidade\": 68.5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "http://127.0.0.1:8083/leituras"
+      },
+      "response": []
+    }
+  ]
+}
