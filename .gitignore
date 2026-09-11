@@ -7,3 +7,14 @@
 .idea/
 *.iml
 out/
+
+# Banco de dados local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+/SQLITE/
+sqlite-*-sqlitejdbc.dll
+__pycache__/
+*.pyc

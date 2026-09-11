@@ -21,7 +21,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"area\": \"AREA-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"percentual_ocupado\": 35.5\n}",
+          "raw": "{\r\n  \"area\": \"AREA-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"percentual_ocupado\": 35.5,\r\n  \"nivel_agua_m\": 12.3,\r\n  \"temperatura_agua_c\": 22.5\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -48,7 +48,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"sensor\": \"SENSOR-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"nivel_corrego_cm\": 120\n}",
+          "raw": "{\r\n  \"sensor\": \"SENSOR-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"nivel_corrego_cm\": 120,\r\n  \"chuva_mm\": 15.2,\r\n  \"velocidade_agua_m_s\": 1.5\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -75,7 +75,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"estacao\": \"ESTACAO-001\",\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\n  \"umidade\": 68.5\n}",
+          "raw": "{\r\n  \"estacao\": \"ESTACAO-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"umidade\": 68.5,\r\n  \"temperatura_c\": 24.5,\r\n  \"vento_km_h\": 8.2\r\n}",
           "options": {
             "raw": {
               "language": "json"

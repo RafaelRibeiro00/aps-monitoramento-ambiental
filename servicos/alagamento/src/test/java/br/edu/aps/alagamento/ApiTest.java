@@ -19,16 +19,18 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ApiTest {
+    @org.junit.jupiter.api.io.TempDir
+    static java.nio.file.Path temporario;
     private static HttpServer servidor;
     private static URI destino;
     private static final HttpClient CLIENTE = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5)).build();
     private static final String VALIDO =
-            "{\"sensor\":\"SENSOR-001\",\"timestamp\":\"2026-09-04T15:30:00Z\",\"nivel_corrego_cm\":68.5}";
+            "{\"sensor\":\"SENSOR-001\",\"timestamp\":\"2026-09-04T15:30:00Z\",\"nivel_corrego_cm\":68.5,\"chuva_mm\":15.2,\"velocidade_agua_m_s\":1.5}";
 
     @BeforeAll
     static void iniciar() throws Exception {
-        servidor = Api.criarServidor(0);
+        servidor = Api.criarServidor(0, temporario.resolve("api.db"));
         servidor.start();
         destino = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort() + "/leituras");
     }

@@ -23,12 +23,17 @@ public class Api {
 
     // Porta zero permite que os testes usem uma porta livre.
     public static HttpServer criarServidor(int porta) throws IOException {
+        return criarServidor(porta, Banco.caminhoPadrao());
+    }
+
+    public static HttpServer criarServidor(int porta, java.nio.file.Path arquivo) throws IOException {
+        Banco banco = new Banco(arquivo);
         HttpServer servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", porta), 0);
-        servidor.createContext("/", Api::receber);
+        servidor.createContext("/", requisicao -> receber(requisicao, banco));
         return servidor;
     }
 
-    private static void receber(HttpExchange requisicao) throws IOException {
+    private static void receber(HttpExchange requisicao, Banco banco) throws IOException {
         try {
             if (!"/leituras".equals(requisicao.getRequestURI().getPath())) {
                 responder(requisicao, 404, "erro", "Rota não encontrada; use /leituras.");
@@ -53,7 +58,14 @@ public class Api {
                 return;
             }
 
-            System.out.println("Leitura recebida: " + leitura.paraJson());
+            try {
+                banco.salvar(leitura);
+            } catch (java.sql.SQLException e) {
+                System.err.println("Falha ao salvar leitura: " + e.getMessage());
+                responder(requisicao, 500, "erro", "Nao foi possivel salvar a leitura. Tente novamente.");
+                return;
+            }
+            System.out.println("Leitura salva: " + leitura.paraJson());
             responder(requisicao, 200, "mensagem", "Leitura recebida com sucesso.");
         } finally {
             requisicao.close();

@@ -17,20 +17,22 @@ import java.util.Set;
 public record Leitura(
         String area,
         String timestamp,
-        @SerializedName("percentual_ocupado") Double percentualOcupado
+        @SerializedName("percentual_ocupado") Double percentualOcupado,
+        Double nivel_agua_m,
+        Double temperatura_agua_c
 ) {
     private static final Gson JSON = new GsonBuilder().setStrictness(Strictness.STRICT).create();
-    private static final Set<String> CAMPOS = Set.of("area", "timestamp", "percentual_ocupado");
+    private static final Set<String> CAMPOS = Set.of("area", "timestamp", "percentual_ocupado", "nivel_agua_m", "temperatura_agua_c");
 
     public static Leitura deJson(String corpo) {
         JsonElement elemento;
         try {
             elemento = JSON.fromJson(corpo, JsonElement.class);
         } catch (JsonParseException e) {
-            throw new IllegalArgumentException("JSON inválido: envie apenas um objeto com os três campos.");
+            throw new IllegalArgumentException("JSON inválido: envie apenas um objeto com os cinco campos.");
         }
         if (elemento == null || !elemento.isJsonObject()) {
-            throw new IllegalArgumentException("JSON inválido: envie um objeto com os três campos.");
+            throw new IllegalArgumentException("JSON inválido: envie um objeto com os cinco campos.");
         }
         JsonObject objeto = elemento.getAsJsonObject();
         for (String campo : objeto.keySet()) {
@@ -48,7 +50,7 @@ public record Leitura(
         if (!medida.isJsonPrimitive() || !medida.getAsJsonPrimitive().isNumber()) {
             throw new IllegalArgumentException("O campo percentual_ocupado deve ser um número.");
         }
-        Leitura leitura = new Leitura(identificacao, momento, medida.getAsDouble());
+        Leitura leitura = new Leitura(identificacao, momento, medida.getAsDouble(), numeroObrigatorio(objeto, "nivel_agua_m"), numeroObrigatorio(objeto, "temperatura_agua_c"));
         leitura.validar();
         return leitura;
     }
@@ -60,6 +62,24 @@ public record Leitura(
             throw new IllegalArgumentException("O campo " + campo + " deve ser um texto não vazio.");
         }
         return valor.getAsString();
+    }
+
+    private static Double numeroObrigatorio(JsonObject objeto, String campo) {
+        JsonElement valor = objeto.get(campo);
+        if (valor == null || valor.isJsonNull()) {
+            throw new IllegalArgumentException("O campo " + campo + " é obrigatório e não pode ser null.");
+        }
+        if (!valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException("O campo " + campo + " deve ser um número.");
+        }
+        return valor.getAsDouble();
+    }
+
+    private static void validarMedida(Double valor, String campo, double minimo) {
+        if (valor == null || !Double.isFinite(valor) || valor < minimo) {
+            throw new IllegalArgumentException("O campo " + campo
+                    + " deve ser um número finito maior ou igual a " + minimo + ".");
+        }
     }
 
     public void validar() {
@@ -84,6 +104,8 @@ public record Leitura(
             throw new IllegalArgumentException(
                     "percentual_ocupado deve ser um número entre 0 e 100, inclusive.");
         }
+        validarMedida(nivel_agua_m, "nivel_agua_m", 0);
+        validarMedida(temperatura_agua_c, "temperatura_agua_c", -273.15);
     }
 
     public String paraJson() {
