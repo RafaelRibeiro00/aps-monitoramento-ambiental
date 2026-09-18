@@ -32,7 +32,7 @@ Dados inválidos recebem HTTP 400 e não são gravados. Se a gravação falhar, 
 | Alagamento | API - Alagamento | 8082 | `http://127.0.0.1:8082/leituras` | `alagamento.py` |
 | Inversão térmica | API - Inversao Termica | 8083 | `http://127.0.0.1:8083/leituras` | `inversao_termica.py` |
 
-As três rotas usam **POST**, corpo **JSON** e cabeçalho `Content-Type: application/json`. Não exigem autenticação. O endereço `127.0.0.1` representa o próprio computador: os clientes devem executar na mesma máquina que as APIs. As APIs estão configuradas para escutar apenas nesse endereço local.
+As três rotas usam **POST**, corpo **JSON** e cabeçalho `Content-Type: application/json`. Não exigem autenticação. O endereço `127.0.0.1` representa o próprio computador: os clientes devem executar na mesma máquina que as APIs. Na execução local, as APIs escutam nesse endereço por padrão. Nas imagens Docker, a variável APS_HOST=0.0.0.0 permite receber conexões pela rede do contêiner; a porta também precisa ser publicada no Windows.
 
 ## 2. Regras gerais das requisições
 
@@ -267,9 +267,10 @@ No IntelliJ, execute **Lifecycle → test** na janela Maven para testar os módu
 |---|---|
 | `ApiTest` | Rotas, métodos, formato JSON, identificadores, datas e validações. |
 | `PersistenciaTest` | Gravação por HTTP, dados preservados após reiniciar e resposta 500 em falha de gravação. |
+| `SaudeTest` | Liveness, readiness, indisponibilidade e recuperação do banco, bloqueio de escrita e métodos HTTP. |
 | `MedicoesTest` | Novas medições obrigatórias, limites e migração de bancos antigos sem perda de registros. |
 
-Última verificação da implementação: **120 testes Java aprovados, 40 por módulo**. Os exemplos da coleção Postman também foram enviados por HTTP a APIs temporárias com banco compartilhado.
+Última verificação da implementação: **123 testes Java aprovados, 41 por módulo**. Os exemplos da coleção Postman também foram enviados por HTTP a APIs temporárias com banco compartilhado.
 
 Os geradores Python foram verificados com 24 envios aceitos, nas taxas de 1 e 2 requisições/s. A limpeza foi testada em banco temporário, incluindo preservação das tabelas, repetição da limpeza e reversão em caso de erro. Os testes não limpam o banco real. Esses resultados se referem à implementação verificada, não significam que as APIs estejam em execução agora.
 
@@ -310,15 +311,15 @@ No topo de cada um dos três geradores há configurações como estas, no exempl
 
 ```python
 REQUISICOES_POR_SEGUNDO = 1
-URL_API = "http://127.0.0.1:8082/leituras"
-IDENTIFICADOR = "SENSOR-001"
+URL_API = url_api("ALAGAMENTO", 8082)
+IDENTIFICADOR = obter("APS_IDENTIFICADOR", "SENSOR-001")
 TEMPO_LIMITE_SEGUNDOS = 5
 ```
 
 | Variável | Para que serve |
 |---|---|
 | `REQUISICOES_POR_SEGUNDO` | Frequência desejada de envios. Deve ser um número finito maior que zero. |
-| `URL_API` | Endereço da API correspondente, incluindo porta e `/leituras`. |
+| `URL_API` | Lê a porta do `.env`. Pode ser substituída por `MANANCIAL_URL`, `ALAGAMENTO_URL` ou `INVERSAO_TERMICA_URL` no ambiente. |
 | `IDENTIFICADOR` | Origem das leituras. Preenche `area`, `sensor` ou `estacao`, conforme o script. |
 | `TEMPO_LIMITE_SEGUNDOS` | Timeout usado na comunicação HTTP; padrão de 5 segundos. |
 
@@ -336,7 +337,7 @@ Os intervalos estão na função `gerar_leitura()`, nas chamadas `random.uniform
 
 ### Passo 3 — Iniciar os envios
 
-Com a API correspondente iniciada no IntelliJ, execute **um comando por terminal**:
+Com a API correspondente iniciada no IntelliJ ou no Docker Compose, execute **um comando por terminal**:
 
 ```powershell
 python manancial.py
@@ -368,7 +369,7 @@ O quarto arquivo, `limpar_banco.py`, serve para apagar as leituras acumuladas du
 
 | Variável | Para que serve |
 |---|---|
-| `BANCO` | Aponta para `dados/aps.db`, calculado a partir da localização do script. |
+| `BANCO` | Lê `APS_DATA_DIR` e `APS_DB_FILE` do ambiente ou `.env`, exatamente como o Compose. Na configuração atual, aponta para `C:/Users/Rafae/APS-Docker/dados/aps.db`. |
 | `TABELAS` | Lista as três tabelas cujos registros serão apagados. |
 
 Pare os geradores antes da limpeza, pois eles podem inserir novos registros logo depois. Na pasta `PYTHON`, execute:
@@ -382,3 +383,103 @@ python limpar_banco.py
 As tabelas, colunas, sequência dos IDs e arquivos de backup são preservados. Portanto, os próximos IDs não necessariamente começam em 1. A limpeza ocorre em uma única transação: se alguma exclusão falhar, toda a operação é desfeita. Se o arquivo não existir, o script informa o erro em vez de criar outro banco.
 
 Depois, atualize a visualização do SQLite para conferir as tabelas vazias e execute novamente os geradores quando quiser produzir novas leituras.
+
+## 12. Docker Compose: executar a etapa de conteinerização
+
+A imagem é o pacote da aplicação; o contêiner é uma execução dessa imagem. O Compose cria e mantém os três contêineres com nomes fixos, rede, portas, banco persistente e verificações de saúde.
+
+| Serviço / nome na rede | Imagem | Contêiner | Porta no Windows | Tabela |
+|---|---|---|---|---|
+| manancial | aps-manancial:1.1.0 | cont-manancial | 8081 | leituras_manancial |
+| alagamento | aps-alagamento:1.1.0 | cont-alagamento | 8082 | leituras_alagamento |
+| inversao-termica | aps-inversao-termica:1.1.0 | cont-inversao-termica | 8083 | leituras_inversaotermica |
+
+### Iniciar tudo
+
+Abra o Docker Desktop e execute na raiz da APS:
+
+```powershell
+docker compose up -d --build --wait
+docker compose ps
+```
+
+As imagens são construídas com testes Java durante o build. Se já estiverem construídas, basta `docker compose up -d`. O comando reutiliza os contêineres existentes; não cria cópias com nomes aleatórios. No Docker Desktop, a pilha aparece como **aps-ambiental**, com os três `cont-...` na aba **Containers**.
+
+Para outra instalação, copie `.env.example` para `.env`, ajuste a pasta de dados e execute o comando acima. Nesta máquina o `.env` já está pronto; não o sobrescreva com o exemplo. No Linux, a pasta de dados precisa permitir escrita pelo UID 10001. A pasta virtual G: do Google Drive não pôde ser montada pelo Docker; por isso os dados desta instalação estão no disco C:.
+
+```powershell
+docker compose stop
+docker compose up -d
+docker compose restart
+docker compose logs --tail 20 manancial
+```
+
+`restart` reinicia a execução sem apagar o banco. Para aplicar alterações no `.env`, use `docker compose up -d`. `docker compose down` remove os contêineres e a rede, mas o banco permanece na pasta montada; `up -d` recria os contêineres usando esse mesmo arquivo.
+
+### Configuração por ambiente
+
+O `.env.example` é o modelo versionado. O `.env` local fica fora do Git. A aplicação não exige credenciais para o SQLite e não contém senhas de banco.
+
+| Variável | Uso |
+|---|---|
+| APS_IMAGE_TAG | Versão das três imagens, atualmente 1.1.0. |
+| APS_DATA_DIR | Pasta persistente no computador. Atual: C:/Users/Rafae/APS-Docker/dados. |
+| APS_DB_FILE | Nome do arquivo, aps.db. |
+| APS_BIND_HOST | Interface publicada no Windows; padrão 127.0.0.1. |
+| MANANCIAL_PORT / ALAGAMENTO_PORT / INVERSAO_TERMICA_PORT | Portas publicadas; padrões 8081/8082/8083. |
+| APS_HOST / APS_PORT / APS_DB | Ambiente recebido por cada aplicação dentro do contêiner. |
+
+Os clientes Python leem as portas e o caminho do banco da mesma configuração. Variáveis do ambiente prevalecem sobre o `.env`. O leitor Python suporta as atribuições simples usadas no modelo (`NOME=valor`); não use expansão de variáveis ou comentários no final dos valores. `APS_CLIENT_HOST` permite trocar o endereço usado pelos geradores, e `APS_IDENTIFICADOR` identifica leituras de teste.
+
+### Banco ativo e consulta ao vivo
+
+**Abra no DB Browser for SQLite: `C:\Users\Rafae\APS-Docker\dados\aps.db`.** Dentro dos três contêineres, o mesmo arquivo aparece em `/app/dados/aps.db`, por uma montagem persistente de pasta (bind mount).
+
+1. Clique em **Open Database** e abra esse arquivo.
+2. Em **Browse Data**, selecione `leituras_manancial`, `leituras_alagamento` ou `leituras_inversaotermica`.
+3. Rode o gerador Python correspondente.
+4. Clique nas **setas verdes de atualizar** para ver as novas linhas. A grade do DB Browser não se atualiza automaticamente a cada envio.
+
+Também pode repetir as consultas em **Execute SQL**:
+
+```sql
+SELECT * FROM leituras_manancial ORDER BY id DESC LIMIT 100;
+SELECT * FROM leituras_alagamento ORDER BY id DESC LIMIT 100;
+SELECT * FROM leituras_inversaotermica ORDER BY id DESC LIMIT 100;
+```
+
+Não deixe uma edição manual pendente no DB Browser durante os envios: ela pode bloquear a escrita. O banco antigo em `G:\Meu Drive\PESSOAL\FACULDADE\8 semestre\APS\dados\aps.db` pertence à execução Java local e não recebe as gravações desta configuração Docker.
+
+O script `PYTHON/limpar_banco.py` usa o mesmo banco definido no `.env` e apaga as leituras das três tabelas. Os backups em `C:\Users\Rafae\APS-Docker\backups-20260918` foram preservados; a migração para Compose também criou um backup consistente antes da troca. Os contêineres e imagens obsoletos foram removidos.
+
+### Saúde e comunicação na rede
+
+Cada API tem duas rotas GET:
+
+- `/health/live`: HTTP 200 quando o processo consegue atender HTTP.
+- `/health/ready`: HTTP 200 se o SQLite está acessível, com o esquema esperado e disponível para escrita; HTTP 503 em falha ou bloqueio persistente. A verificação não insere leituras.
+
+O Compose monitora readiness e mostra **healthy**. Os testes comprovam que liveness continua 200 quando readiness passa a 503 e que readiness se recupera após o banco voltar.
+
+```powershell
+docker compose exec manancial curl -f http://127.0.0.1:8081/health/live
+docker compose exec manancial curl -f http://127.0.0.1:8081/health/ready
+docker compose exec manancial curl -f http://alagamento:8082/health/ready
+docker compose exec alagamento curl -f http://inversao-termica:8083/health/ready
+docker compose exec inversao-termica curl -f http://manancial:8081/health/ready
+```
+
+As três últimas consultas demonstram comunicação entre contêineres pelos nomes DNS dos serviços. As APIs recebem medições independentes e não precisam chamar umas às outras ao gravar. `127.0.0.1` só é usado no acesso do Windows ou para o contêiner verificar a si mesmo; a comunicação entre serviços usa seus nomes, sem IP fixo.
+
+### Demonstrar e validar
+
+```powershell
+python PYTHON/manancial.py --quantidade 3
+python PYTHON/alagamento.py --quantidade 3
+python PYTHON/inversao_termica.py --quantidade 3
+python scripts/validar_docker.py
+```
+
+O validador verifica usuário não-root, ausência de compilador/Maven/fontes, saúde, chamadas pelos nomes da rede, três envios por cliente e persistência após `docker compose restart`. Ele preserva os dados existentes e deixa nove novas leituras com identificador `VALIDACAO-...`; o resultado fica em `validacao-docker.json`.
+
+A folha de requisitos preenchida, com evidências, está em [VALIDACAO_DOCKER.md](VALIDACAO_DOCKER.md).

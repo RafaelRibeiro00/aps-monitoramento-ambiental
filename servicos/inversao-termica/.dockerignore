@@ -1,0 +1,10 @@
+target/
+.git/
+.idea/
+*.iml
+*.log
+*.db*
+.env
+.env.*
+!.env.example
+__pycache__/

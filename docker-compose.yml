@@ -1,0 +1,84 @@
+name: aps-ambiental
+
+services:
+  manancial:
+    image: aps-manancial:${APS_IMAGE_TAG:-1.1.0}
+    build:
+      context: ./servicos/manancial
+    container_name: cont-manancial
+    restart: unless-stopped
+    init: true
+    environment:
+      APS_HOST: 0.0.0.0
+      APS_PORT: "8081"
+      APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
+    ports:
+      - "${APS_BIND_HOST:-127.0.0.1}:${MANANCIAL_PORT:-8081}:8081"
+    volumes:
+      - type: bind
+        source: ${APS_DATA_DIR:-./dados}
+        target: /app/dados
+    networks:
+      - monitoramento
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --max-time 3 http://127.0.0.1:$$APS_PORT/health/ready || exit 1"]
+      interval: 10s
+      timeout: 4s
+      retries: 3
+      start_period: 15s
+
+  alagamento:
+    image: aps-alagamento:${APS_IMAGE_TAG:-1.1.0}
+    build:
+      context: ./servicos/alagamento
+    container_name: cont-alagamento
+    restart: unless-stopped
+    init: true
+    environment:
+      APS_HOST: 0.0.0.0
+      APS_PORT: "8082"
+      APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
+    ports:
+      - "${APS_BIND_HOST:-127.0.0.1}:${ALAGAMENTO_PORT:-8082}:8082"
+    volumes:
+      - type: bind
+        source: ${APS_DATA_DIR:-./dados}
+        target: /app/dados
+    networks:
+      - monitoramento
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --max-time 3 http://127.0.0.1:$$APS_PORT/health/ready || exit 1"]
+      interval: 10s
+      timeout: 4s
+      retries: 3
+      start_period: 15s
+
+  inversao-termica:
+    image: aps-inversao-termica:${APS_IMAGE_TAG:-1.1.0}
+    build:
+      context: ./servicos/inversao-termica
+    container_name: cont-inversao-termica
+    restart: unless-stopped
+    init: true
+    environment:
+      APS_HOST: 0.0.0.0
+      APS_PORT: "8083"
+      APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
+    ports:
+      - "${APS_BIND_HOST:-127.0.0.1}:${INVERSAO_TERMICA_PORT:-8083}:8083"
+    volumes:
+      - type: bind
+        source: ${APS_DATA_DIR:-./dados}
+        target: /app/dados
+    networks:
+      - monitoramento
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --max-time 3 http://127.0.0.1:$$APS_PORT/health/ready || exit 1"]
+      interval: 10s
+      timeout: 4s
+      retries: 3
+      start_period: 15s
+
+networks:
+  monitoramento:
+    driver: bridge

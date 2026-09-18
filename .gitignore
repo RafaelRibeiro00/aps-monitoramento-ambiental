@@ -18,3 +18,7 @@ out/
 sqlite-*-sqlitejdbc.dll
 __pycache__/
 *.pyc
+# Configuracao local e credenciais
+.env
+.env.*
+!.env.example

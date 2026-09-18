@@ -10,14 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class Api {
-    public static final int PORTA = 8081;
+    public static final int PORTA = Integer.parseInt(System.getenv().getOrDefault("APS_PORT", "8081"));
     private static final Gson JSON = new Gson();
+    private static final String HOST = System.getenv().getOrDefault("APS_HOST", "127.0.0.1");
 
     public static void main(String[] args) throws IOException {
         HttpServer servidor = criarServidor(PORTA);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> servidor.stop(0)));
         servidor.start();
-        System.out.println("API manancial: http://127.0.0.1:" + PORTA + "/leituras");
+        System.out.println("API manancial: http://" + HOST + ":" + PORTA + "/leituras");
         System.out.println(".");
     }
 
@@ -28,13 +29,24 @@ public class Api {
 
     public static HttpServer criarServidor(int porta, java.nio.file.Path arquivo) throws IOException {
         Banco banco = new Banco(arquivo);
-        HttpServer servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", porta), 0);
+        HttpServer servidor = HttpServer.create(new InetSocketAddress(HOST, porta), 0);
         servidor.createContext("/", requisicao -> receber(requisicao, banco));
         return servidor;
     }
 
     private static void receber(HttpExchange requisicao, Banco banco) throws IOException {
         try {
+            String rota = requisicao.getRequestURI().getPath();
+            if ("/health/live".equals(rota) || "/health/ready".equals(rota)) {
+                if (!"GET".equals(requisicao.getRequestMethod())) {
+                    requisicao.getResponseHeaders().set("Allow", "GET");
+                    responder(requisicao, 405, "erro", "Use GET para consultar a saude.");
+                    return;
+                }
+                boolean pronto = "/health/live".equals(rota) || banco.pronto();
+                responder(requisicao, pronto ? 200 : 503, "status", pronto ? "ok" : "indisponivel");
+                return;
+            }
             if (!"/leituras".equals(requisicao.getRequestURI().getPath())) {
                 responder(requisicao, 404, "erro", "Rota não encontrada; use /leituras.");
                 return;
