@@ -1,31 +1,40 @@
 {
-  "data": "2026-09-18T20:36:51.972138-03:00",
+  "data": "2026-09-18T21:16:34.438430-03:00",
   "banco": "C:\\Users\\Rafae\\APS-Docker\\dados\\aps.db",
-  "marcador": "VALIDACAO-20260918-203651-972090",
+  "marcador": "VALIDACAO-20260918-211634-438387",
   "servicos": {
     "manancial": {
       "uid": "10001",
       "cliente_http_200": 3,
       "saude": "live=200, ready=200",
+      "alerta_id": 2,
+      "consulta_filtros_e_alertas": true,
       "dns_destino": "alagamento",
       "persistencia_apos_restart": 3,
-      "dados_anteriores_preservados": true
+      "dados_anteriores_preservados": true,
+      "alerta_preservado_apos_restart": true
     },
     "alagamento": {
       "uid": "10001",
       "cliente_http_200": 3,
       "saude": "live=200, ready=200",
+      "alerta_id": 4,
+      "consulta_filtros_e_alertas": true,
       "dns_destino": "inversao-termica",
       "persistencia_apos_restart": 3,
-      "dados_anteriores_preservados": true
+      "dados_anteriores_preservados": true,
+      "alerta_preservado_apos_restart": true
     },
     "inversao-termica": {
       "uid": "10001",
       "cliente_http_200": 3,
       "saude": "live=200, ready=200",
+      "alerta_id": 1,
+      "consulta_filtros_e_alertas": true,
       "dns_destino": "manancial",
       "persistencia_apos_restart": 3,
-      "dados_anteriores_preservados": true
+      "dados_anteriores_preservados": true,
+      "alerta_preservado_apos_restart": true
     }
   }
 }

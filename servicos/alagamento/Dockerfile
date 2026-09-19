@@ -1,5 +1,5 @@
 # Execute na raiz da APS:
-# docker build -t aps-alagamento:1.1.0 ./servicos/alagamento
+# docker build -t aps-alagamento:1.2.0 ./servicos/alagamento
 
 # Compila, executa os testes e separa as dependencias de execucao.
 FROM maven:3.9.16-eclipse-temurin-17 AS build

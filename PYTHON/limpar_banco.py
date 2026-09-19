@@ -18,6 +18,11 @@ def limpar_banco(caminho=BANCO):
         with conexao:
             conexao.execute("BEGIN IMMEDIATE")
             removidos = {}
+            existentes = {linha[0] for linha in conexao.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            # Remove as notificacoes pendentes junto das leituras para nao envia-las apos a limpeza.
+            for tabela in ("alertas_manancial", "alertas_alagamento", "alertas_inversaotermica"):
+                if tabela in existentes:
+                    removidos[tabela] = conexao.execute(f"DELETE FROM {tabela}").rowcount
             for tabela in TABELAS:
                 # Nomes fixos definidos acima, sem entrada externa na consulta.
                 cursor = conexao.execute(f"DELETE FROM {tabela}")

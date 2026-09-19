@@ -93,9 +93,9 @@ class ApiTest {
 
     @Test
     void rejeitarMetodoERota() throws Exception {
-        HttpResponse<String> metodo = enviar("GET", destino, "");
+        HttpResponse<String> metodo = enviar("DELETE", destino, "");
         assertEquals(405, metodo.statusCode());
-        assertEquals("POST", metodo.headers().firstValue("Allow").orElse(""));
+        assertEquals("GET, POST", metodo.headers().firstValue("Allow").orElse(""));
         assertEquals(404, enviar("POST", destino.resolve("/outra"), VALIDO).statusCode());
     }
 

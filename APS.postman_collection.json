@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "APS - Ingestao ambiental",
-    "description": "Inicie as três APIs no IntelliJ com JDK 17. Cada requisição envia uma leitura e deve receber HTTP 200. Endereços locais, sem autenticação.",
+    "name": "APS - Leituras, consultas e alertas",
+    "description": "APIs Docker nas portas 8081, 8082 e 8083. POST recebe leituras e gera alertas automaticamente; GET consulta leituras e alertas com filtros opcionais. Limites de alerta didaticos configuraveis no .env.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -85,6 +85,141 @@
         "url": "http://127.0.0.1:8083/leituras"
       },
       "response": []
+    },
+    {
+      "name": "Manancial - consultas e alertas",
+      "item": [
+        {
+          "name": "Todas as leituras",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8081/leituras"
+          }
+        },
+        {
+          "name": "Filtrar por sensor, data e medida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8081/leituras?sensor=AREA-001&data=2026-09-18&nivel_agua_m_min=10"
+          }
+        },
+        {
+          "name": "Proxima pagina",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8081/leituras?limite=100&offset=100"
+          }
+        },
+        {
+          "name": "Alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8081/alertas"
+          }
+        },
+        {
+          "name": "Alertas pendentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8081/alertas?status_notificacao=pendente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alagamento - consultas e alertas",
+      "item": [
+        {
+          "name": "Todas as leituras",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8082/leituras"
+          }
+        },
+        {
+          "name": "Filtrar por sensor, data e medida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8082/leituras?sensor=SENSOR-001&data=2026-09-18&nivel_corrego_cm_min=10"
+          }
+        },
+        {
+          "name": "Proxima pagina",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8082/leituras?limite=100&offset=100"
+          }
+        },
+        {
+          "name": "Alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8082/alertas"
+          }
+        },
+        {
+          "name": "Alertas pendentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8082/alertas?status_notificacao=pendente"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inversao termica - consultas e alertas",
+      "item": [
+        {
+          "name": "Todas as leituras",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8083/leituras"
+          }
+        },
+        {
+          "name": "Filtrar por sensor, data e medida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8083/leituras?sensor=ESTACAO-001&data=2026-09-18&temperatura_c_min=10"
+          }
+        },
+        {
+          "name": "Proxima pagina",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8083/leituras?limite=100&offset=100"
+          }
+        },
+        {
+          "name": "Alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8083/alertas"
+          }
+        },
+        {
+          "name": "Alertas pendentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://127.0.0.1:8083/alertas?status_notificacao=pendente"
+          }
+        }
+      ]
     }
   ]
 }

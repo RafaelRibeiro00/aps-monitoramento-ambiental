@@ -2,7 +2,7 @@ name: aps-ambiental
 
 services:
   manancial:
-    image: aps-manancial:${APS_IMAGE_TAG:-1.1.0}
+    image: aps-manancial:${APS_IMAGE_TAG:-1.2.0}
     build:
       context: ./servicos/manancial
     container_name: cont-manancial
@@ -11,6 +11,9 @@ services:
     environment:
       APS_HOST: 0.0.0.0
       APS_PORT: "8081"
+      ALERTA_WEBHOOK_URL: ${MANANCIAL_WEBHOOK_URL:-}
+      ALERTA_WEBHOOK_TOKEN: ${MANANCIAL_WEBHOOK_TOKEN:-}
+      ALERTA_PERCENTUAL_BAIXO: ${ALERTA_PERCENTUAL_BAIXO:-20}
       APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
     ports:
       - "${APS_BIND_HOST:-127.0.0.1}:${MANANCIAL_PORT:-8081}:8081"
@@ -28,7 +31,7 @@ services:
       start_period: 15s
 
   alagamento:
-    image: aps-alagamento:${APS_IMAGE_TAG:-1.1.0}
+    image: aps-alagamento:${APS_IMAGE_TAG:-1.2.0}
     build:
       context: ./servicos/alagamento
     container_name: cont-alagamento
@@ -37,6 +40,10 @@ services:
     environment:
       APS_HOST: 0.0.0.0
       APS_PORT: "8082"
+      ALERTA_WEBHOOK_URL: ${ALAGAMENTO_WEBHOOK_URL:-}
+      ALERTA_WEBHOOK_TOKEN: ${ALAGAMENTO_WEBHOOK_TOKEN:-}
+      ALERTA_NIVEL_CORREGO_CM: ${ALERTA_NIVEL_CORREGO_CM:-200}
+      ALERTA_CHUVA_MM: ${ALERTA_CHUVA_MM:-50}
       APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
     ports:
       - "${APS_BIND_HOST:-127.0.0.1}:${ALAGAMENTO_PORT:-8082}:8082"
@@ -54,7 +61,7 @@ services:
       start_period: 15s
 
   inversao-termica:
-    image: aps-inversao-termica:${APS_IMAGE_TAG:-1.1.0}
+    image: aps-inversao-termica:${APS_IMAGE_TAG:-1.2.0}
     build:
       context: ./servicos/inversao-termica
     container_name: cont-inversao-termica
@@ -63,6 +70,11 @@ services:
     environment:
       APS_HOST: 0.0.0.0
       APS_PORT: "8083"
+      ALERTA_WEBHOOK_URL: ${INVERSAO_TERMICA_WEBHOOK_URL:-}
+      ALERTA_WEBHOOK_TOKEN: ${INVERSAO_TERMICA_WEBHOOK_TOKEN:-}
+      ALERTA_TEMPERATURA_C: ${ALERTA_TEMPERATURA_C:-30}
+      ALERTA_UMIDADE_MAX: ${ALERTA_UMIDADE_MAX:-30}
+      ALERTA_VENTO_MAX_KM_H: ${ALERTA_VENTO_MAX_KM_H:-5}
       APS_DB: /app/dados/${APS_DB_FILE:-aps.db}
     ports:
       - "${APS_BIND_HOST:-127.0.0.1}:${INVERSAO_TERMICA_PORT:-8083}:8083"

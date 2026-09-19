@@ -2,7 +2,7 @@
 
 O projeto recebe e armazena leituras de três temas ambientais: **manancial**, **alagamento** e **inversão térmica**. Cada tema possui uma API Java independente e um gerador Python que simula um sensor. Também é possível enviar leituras manualmente pelo Postman.
 
-Cada requisição contém **um identificador, um timestamp e três medições**. As APIs validam esses cinco campos e salvam os dados em um banco SQLite compartilhado. O sistema mantém o histórico das leituras; não calcula alertas, previsões ou diagnósticos ambientais automaticamente.
+Cada requisição contém **um identificador, um timestamp e três medições**. As APIs validam esses cinco campos e salvam os dados em um banco SQLite compartilhado. O sistema mantém o histórico, permite consultas filtradas e gera alertas didáticos automaticamente. O envio externo por webhook é opcional; não realiza previsões ou diagnósticos ambientais.
 
 ## 1. Como o projeto funciona
 
@@ -32,7 +32,7 @@ Dados inválidos recebem HTTP 400 e não são gravados. Se a gravação falhar, 
 | Alagamento | API - Alagamento | 8082 | `http://127.0.0.1:8082/leituras` | `alagamento.py` |
 | Inversão térmica | API - Inversao Termica | 8083 | `http://127.0.0.1:8083/leituras` | `inversao_termica.py` |
 
-As três rotas usam **POST**, corpo **JSON** e cabeçalho `Content-Type: application/json`. Não exigem autenticação. O endereço `127.0.0.1` representa o próprio computador: os clientes devem executar na mesma máquina que as APIs. Na execução local, as APIs escutam nesse endereço por padrão. Nas imagens Docker, a variável APS_HOST=0.0.0.0 permite receber conexões pela rede do contêiner; a porta também precisa ser publicada no Windows.
+O envio de leituras nas três APIs usa **POST**, corpo **JSON** e cabeçalho `Content-Type: application/json`. Não exigem autenticação. O endereço `127.0.0.1` representa o próprio computador: os clientes devem executar na mesma máquina que as APIs. Na execução local, as APIs escutam nesse endereço por padrão. Nas imagens Docker, a variável APS_HOST=0.0.0.0 permite receber conexões pela rede do contêiner; a porta também precisa ser publicada no Windows.
 
 ## 2. Regras gerais das requisições
 
@@ -129,7 +129,7 @@ Recebe dados meteorológicos de uma estação: umidade, temperatura e velocidade
 }
 ```
 
-A API valida os valores e salva uma linha na tabela de inversão térmica. Nesta implementação, ela apenas coleta e armazena essas medições; não determina se está ocorrendo inversão térmica.
+A API valida os valores e salva uma linha na tabela de inversão térmica. Ela também gera um alerta didático para a combinação de calor, baixa umidade e pouco vento, mas não determina se está ocorrendo inversão térmica.
 
 ## 6. Respostas e problemas comuns
 
@@ -138,7 +138,7 @@ A API valida os valores e salva uma linha na tabela de inversão térmica. Nesta
 | `200 OK` | Leitura validada e salva no SQLite. | O console mostra `Leitura salva:` seguido dos dados. |
 | `400 Bad Request` | JSON ou campo inválido; leitura não gravada. | Leia o campo `erro` da resposta e confira os cinco campos. |
 | `404 Not Found` | Caminho incorreto. | Use exatamente `/leituras`. |
-| `405 Method Not Allowed` | Método incorreto. | Use POST. Abrir a URL no navegador normalmente envia GET. |
+| `405 Method Not Allowed` | Método incorreto. | Use POST para enviar ou GET para consultar. |
 | `500 Internal Server Error` | Falha ao salvar no banco. | Confira o console Java, o caminho e eventuais bloqueios de escrita. |
 | Conexão recusada | Não foi possível conectar à API. | Inicie a API e confira a porta e o endereço do cliente. |
 
@@ -257,7 +257,7 @@ ORDER BY id DESC;
 SELECT COUNT(*) AS total FROM leituras_alagamento;
 ```
 
-`ORDER BY id DESC` mostra as inserções mais recentes primeiro. A API disponibiliza a rota de envio; não há rota GET para consultar o histórico.
+`ORDER BY id DESC` mostra as inserções mais recentes primeiro. A API também disponibiliza `GET /leituras` para consultar o histórico com filtros e paginação (seção 13).
 
 ## 9. Testes do projeto
 
@@ -267,10 +267,12 @@ No IntelliJ, execute **Lifecycle → test** na janela Maven para testar os módu
 |---|---|
 | `ApiTest` | Rotas, métodos, formato JSON, identificadores, datas e validações. |
 | `PersistenciaTest` | Gravação por HTTP, dados preservados após reiniciar e resposta 500 em falha de gravação. |
+| `ConsultaTest` | Filtros combinados, paginação, datas com fuso, entradas inválidas e falha no banco. |
+| `AlertaTest` | Geração e persistência atômica, consulta HTTP e repetição de webhook após falha. |
 | `SaudeTest` | Liveness, readiness, indisponibilidade e recuperação do banco, bloqueio de escrita e métodos HTTP. |
 | `MedicoesTest` | Novas medições obrigatórias, limites e migração de bancos antigos sem perda de registros. |
 
-Última verificação da implementação: **123 testes Java aprovados, 41 por módulo**. Os exemplos da coleção Postman também foram enviados por HTTP a APIs temporárias com banco compartilhado.
+Última verificação da implementação: **138 testes Java aprovados, 46 por módulo**. Os exemplos da coleção Postman também foram enviados por HTTP a APIs temporárias com banco compartilhado.
 
 Os geradores Python foram verificados com 24 envios aceitos, nas taxas de 1 e 2 requisições/s. A limpeza foi testada em banco temporário, incluindo preservação das tabelas, repetição da limpeza e reversão em caso de erro. Os testes não limpam o banco real. Esses resultados se referem à implementação verificada, não significam que as APIs estejam em execução agora.
 
@@ -380,7 +382,7 @@ python limpar_banco.py
 
 **Esse comando apaga imediatamente todos os registros das três tabelas, sem pedir confirmação.** Ele mostra o caminho do banco e a quantidade de registros apagados por tabela.
 
-As tabelas, colunas, sequência dos IDs e arquivos de backup são preservados. Portanto, os próximos IDs não necessariamente começam em 1. A limpeza ocorre em uma única transação: se alguma exclusão falhar, toda a operação é desfeita. Se o arquivo não existir, o script informa o erro em vez de criar outro banco.
+A limpeza também remove os alertas associados, inclusive os envios pendentes. Pare os contêineres antes de limpar se houver webhook configurado, para impedir que um envio já em andamento termine depois da limpeza. As tabelas, colunas, sequência dos IDs e arquivos de backup são preservados. Portanto, os próximos IDs não necessariamente começam em 1. A limpeza ocorre em uma única transação: se alguma exclusão falhar, toda a operação é desfeita. Se o arquivo não existir, o script informa o erro em vez de criar outro banco.
 
 Depois, atualize a visualização do SQLite para conferir as tabelas vazias e execute novamente os geradores quando quiser produzir novas leituras.
 
@@ -390,9 +392,9 @@ A imagem é o pacote da aplicação; o contêiner é uma execução dessa imagem
 
 | Serviço / nome na rede | Imagem | Contêiner | Porta no Windows | Tabela |
 |---|---|---|---|---|
-| manancial | aps-manancial:1.1.0 | cont-manancial | 8081 | leituras_manancial |
-| alagamento | aps-alagamento:1.1.0 | cont-alagamento | 8082 | leituras_alagamento |
-| inversao-termica | aps-inversao-termica:1.1.0 | cont-inversao-termica | 8083 | leituras_inversaotermica |
+| manancial | aps-manancial:1.2.0 | cont-manancial | 8081 | leituras_manancial |
+| alagamento | aps-alagamento:1.2.0 | cont-alagamento | 8082 | leituras_alagamento |
+| inversao-termica | aps-inversao-termica:1.2.0 | cont-inversao-termica | 8083 | leituras_inversaotermica |
 
 ### Iniciar tudo
 
@@ -422,7 +424,7 @@ O `.env.example` é o modelo versionado. O `.env` local fica fora do Git. A apli
 
 | Variável | Uso |
 |---|---|
-| APS_IMAGE_TAG | Versão das três imagens, atualmente 1.1.0. |
+| APS_IMAGE_TAG | Versão das três imagens, atualmente 1.2.0. |
 | APS_DATA_DIR | Pasta persistente no computador. Atual: C:/Users/Rafae/APS-Docker/dados. |
 | APS_DB_FILE | Nome do arquivo, aps.db. |
 | APS_BIND_HOST | Interface publicada no Windows; padrão 127.0.0.1. |
@@ -454,7 +456,7 @@ O script `PYTHON/limpar_banco.py` usa o mesmo banco definido no `.env` e apaga a
 
 ### Saúde e comunicação na rede
 
-Cada API tem duas rotas GET:
+Cada API tem duas rotas GET de saúde:
 
 - `/health/live`: HTTP 200 quando o processo consegue atender HTTP.
 - `/health/ready`: HTTP 200 se o SQLite está acessível, com o esquema esperado e disponível para escrita; HTTP 503 em falha ou bloqueio persistente. A verificação não insere leituras.
@@ -480,6 +482,97 @@ python PYTHON/inversao_termica.py --quantidade 3
 python scripts/validar_docker.py
 ```
 
-O validador verifica usuário não-root, ausência de compilador/Maven/fontes, saúde, chamadas pelos nomes da rede, três envios por cliente e persistência após `docker compose restart`. Ele preserva os dados existentes e deixa nove novas leituras com identificador `VALIDACAO-...`; o resultado fica em `validacao-docker.json`.
+O validador verifica usuário não-root, ausência de compilador/Maven/fontes, saúde, chamadas pelos nomes da rede, três envios por cliente e persistência após `docker compose restart`. Ele preserva os dados existentes e deixa doze novas leituras com identificador `VALIDACAO-...` (três aleatórias e uma crítica por serviço), incluindo alertas que também são conferidos após reiniciar; o resultado fica em `validacao-docker.json`.
 
 A folha de requisitos preenchida, com evidências, está em [VALIDACAO_DOCKER.md](VALIDACAO_DOCKER.md).
+
+## 13. Consultas e alertas — versão 1.2.0
+
+As três APIs têm o mesmo conjunto de rotas:
+
+| Método e rota | Função |
+|---|---|
+| `POST /leituras` | Recebe e grava uma leitura; avalia as regras e grava o alerta na mesma transação. |
+| `GET /leituras` | Consulta o histórico com filtros opcionais e paginação. |
+| `GET /alertas` | Consulta os alertas gerados automaticamente e o estado dos envios. |
+| `GET /health/live` | Verifica se a API está viva. |
+| `GET /health/ready` | Verifica disponibilidade do banco, incluindo a tabela de alertas. |
+
+O GET não cria nem envia alertas. O disparo ocorre quando chega uma nova leitura crítica por POST. Não é preciso chamar uma segunda rota para avaliar o sensor. Leituras anteriores à atualização ficam preservadas e consultáveis; não geram alertas retroativos.
+
+### Uma rota para listar e filtrar
+
+Abra no navegador ou use GET no Postman:
+
+```text
+http://127.0.0.1:8081/leituras
+http://127.0.0.1:8081/leituras?sensor=AREA-001
+http://127.0.0.1:8081/leituras?sensor=AREA-001&data=2026-09-18&nivel_agua_m_min=10&nivel_agua_m_max=20
+http://127.0.0.1:8082/leituras?sensor=SENSOR-001&nivel_corrego_cm_min=200
+http://127.0.0.1:8083/leituras?estacao=ESTACAO-001&temperatura_c_min=30&umidade_max=30
+```
+
+Todos os filtros são opcionais e combinados com **E**. `sensor` é um nome comum às três APIs: equivale a `area` no manancial, `sensor` no alagamento e `estacao` na inversão. Também pode usar o nome original (`area` ou `estacao`), mas não junto com o alias `sensor`.
+
+| Filtro | Comportamento |
+|---|---|
+| sensor / area / estacao | Igualdade exata do identificador, conforme o serviço. |
+| data | Dia em `AAAA-MM-DD`, considerando UTC. |
+| data_inicio / data_fim | Intervalo inclusivo do timestamp do sensor em RFC 3339 com fuso. Ex.: `2026-09-18T00:00:00Z`. Fuso positivo deve usar `%2B` no lugar de `+` na URL. Comparação com precisão de milissegundos do SQLite. |
+| nome da medição | Valor numérico exato. |
+| nome da medição + _min / _max | Limites inclusivos para qualquer uma das três medições do serviço. |
+| limite | Tamanho da página: padrão 100, mínimo 1, máximo 1000. |
+| offset | Quantidade de registros a pular; padrão 0. |
+
+Medições filtráveis:
+
+- Manancial: `percentual_ocupado`, `nivel_agua_m`, `temperatura_agua_c`.
+- Alagamento: `nivel_corrego_cm`, `chuva_mm`, `velocidade_agua_m_s`.
+- Inversão térmica: `umidade`, `temperatura_c`, `vento_km_h`.
+
+Resposta: `{"total":250,"limite":100,"offset":0,"leituras":[...]}`. As leituras incluem `id`, identificação, timestamp, medições e `recebido_em`. A ordem é ID crescente; para ver tudo, consulte offsets 0, 100, 200, até alcançar `total`. Sem resultados, a lista vem vazia com HTTP 200. Campos antigos ausentes aparecem como `null` e não atendem a filtros numéricos.
+
+Filtros desconhecidos, repetidos, vazios, datas inválidas, mínimos maiores que máximos e paginação inválida retornam HTTP 400. Valores não são concatenados ao SQL.
+
+### Regras iniciais de alerta
+
+Estes limites são exemplos didáticos ajustáveis, não critérios oficiais de emergência. Cada leitura que satisfaz uma regra gera um alerta; leituras normais não geram alerta. Não há supressão temporal entre leituras críticas sucessivas.
+
+| Serviço | Condição inclusiva | Configuração no .env |
+|---|---|---|
+| Manancial | Percentual ocupado ≤ 20% | ALERTA_PERCENTUAL_BAIXO=20 |
+| Alagamento | Nível ≥ 200 cm **OU** chuva ≥ 50 mm | ALERTA_NIVEL_CORREGO_CM=200; ALERTA_CHUVA_MM=50 |
+| Inversão térmica | Temperatura ≥ 30 °C **E** umidade ≤ 30% **E** vento ≤ 5 km/h | ALERTA_TEMPERATURA_C=30; ALERTA_UMIDADE_MAX=30; ALERTA_VENTO_MAX_KM_H=5 |
+
+O último alerta se chama `CALOR_AR_SECO_POUCO_VENTO`: os sensores atuais não medem o perfil vertical de temperatura necessário para confirmar inversão térmica. Alterar limites não reclassifica o histórico; as condições vigentes são guardadas no alerta quando ele é criado.
+
+A resposta de POST mantém `mensagem` e acrescenta `leitura_id` e `alertas`. Os alertas também aparecem nos logs do contêiner e nas tabelas `alertas_manancial`, `alertas_alagamento` e `alertas_inversaotermica` do mesmo SQLite.
+
+```text
+http://127.0.0.1:8081/alertas
+http://127.0.0.1:8082/alertas?sensor=SENSOR-001&data=2026-09-18
+http://127.0.0.1:8083/alertas?status_notificacao=pendente
+```
+
+`GET /alertas` aceita os mesmos filtros das leituras, mais `status_notificacao=pendente` ou `enviado`. Retorna `total`, `limite`, `offset`, `alertas` e `webhook_configurado`. Cada alerta contém a leitura de origem, os limites usados, tentativas, último erro e data de envio.
+
+### Notificações externas por webhook
+
+Sem destino informado, as URLs estão vazias: os alertas ficam salvos, aparecem na API e nos logs, mas **não são enviados para fora**. Para ativar, coloque no `.env` a URL de um endpoint que aceite POST JSON:
+
+```dotenv
+MANANCIAL_WEBHOOK_URL=https://seu-destino.example/notificacoes
+MANANCIAL_WEBHOOK_TOKEN=
+ALAGAMENTO_WEBHOOK_URL=https://seu-destino.example/notificacoes
+ALAGAMENTO_WEBHOOK_TOKEN=
+INVERSAO_TERMICA_WEBHOOK_URL=https://seu-destino.example/notificacoes
+INVERSAO_TERMICA_WEBHOOK_TOKEN=
+```
+
+As URLs acima são exemplos e devem ser substituídas. Se o destino exigir autenticação Bearer, preencha o token somente no `.env` local. Os três serviços podem usar o mesmo destino ou destinos diferentes. Aplique com `docker compose up -d`.
+
+O envio ocorre em segundo plano, sem aguardar o destino na resposta ao sensor. Uma resposta HTTP 2xx confirma o envio; timeout ou erro mantém o alerta pendente e provoca novas tentativas com espera progressiva, até 5 minutos entre tentativas. A fila sobrevive ao restart. Ao configurar um destino, os alertas pendentes anteriores também serão enviados.
+
+O corpo JSON contém `servico`, `leitura_id`, `tipo`, `mensagem`, `limites` e `leitura`. O cabeçalho `Idempotency-Key` identifica o mesmo evento nas tentativas. Como uma falha de rede pode ocorrer depois de o destino receber, a entrega é pelo menos uma vez: o receptor deve usar essa chave para evitar notificações duplicadas. Um webhook genérico pode precisar de adaptação para o formato específico de plataformas de mensagens.
+
+Os testes usam um destino HTTP simulado local em cada módulo, comprovando falha 503, nova tentativa e sucesso sem duplicar registros. Nenhuma notificação foi enviada a terceiros durante a validação.
