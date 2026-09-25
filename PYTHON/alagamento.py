@@ -1,110 +1,73 @@
-from configuracao import obter, url_api
-
-REQUISICOES_POR_SEGUNDO = 20  # 1 = uma por segundo; 2 = duas por segundo.
-URL_API = url_api("ALAGAMENTO", 8082)
-IDENTIFICADOR = obter("APS_IDENTIFICADOR", "SENSOR-001")
-TEMPO_LIMITE_SEGUNDOS = 5
-
+"""Tres sensores independentes do mesmo ponto; cada medicao usa seu proprio POST."""
 import argparse
 from datetime import datetime
 import json
-import math
 import random
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from configuracao import obter, url_api
 
+URL_API = url_api("ALAGAMENTO", 8082)
+PONTO_ID = obter("ALAGAMENTO_PONTO_ID", "PONTO-001")
+INTERVALO_SEGUNDOS = 1.0
+SENSORES = {
+    "nivel_corrego": ("NIVEL-001", "cm", 0, 500),
+    "chuva": ("CHUVA-001", "mm", 0, 100),
+    "velocidade_agua": ("VELOCIDADE-001", "m/s", 0, 5),
+}
 
-def gerar_leitura():
-    """Gera tres novas medicoes simuladas para o mesmo sensor a cada envio."""
-    return {
-        "sensor": IDENTIFICADOR,
-        "timestamp": datetime.now().astimezone().isoformat(timespec="milliseconds"),
-        "nivel_corrego_cm": round(random.uniform(0, 500), 2),
-        "chuva_mm": round(random.uniform(0, 100), 2),
-        "velocidade_agua_m_s": round(random.uniform(0, 5), 2),
-    }
+def gerar_medicao(tipo):
+    sensor, unidade, minimo, maximo = SENSORES[tipo]
+    return {"sensor_id": sensor, "ponto_id": PONTO_ID, "tipo": tipo,
+            "valor": round(random.uniform(minimo, maximo), 2), "unidade": unidade,
+            "timestamp": datetime.now().astimezone().isoformat(timespec="milliseconds")}
 
-
-def enviar_leitura(leitura):
-    corpo = json.dumps(leitura, allow_nan=False).encode("utf-8")
-    pedido = Request(
-        URL_API, data=corpo, method="POST", headers={"Content-Type": "application/json"}
-    )
+def enviar_medicao(medicao):
+    pedido = Request(URL_API, data=json.dumps(medicao, allow_nan=False).encode(),
+                     headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urlopen(pedido, timeout=TEMPO_LIMITE_SEGUNDOS) as resposta:
-            mensagem = resposta.read().decode("utf-8", errors="replace")
-            print(
-                f"HTTP {resposta.status} | {corpo.decode('utf-8')} | {mensagem}",
-                flush=True,
-            )
-            return resposta.status == 200
+        with urlopen(pedido, timeout=5) as resposta:
+            print(f"Sensor {medicao['sensor_id']} | {medicao['valor']} {medicao['unidade']} | HTTP {resposta.status} | {resposta.read().decode()}", flush=True)
+            return resposta.status == 202
     except HTTPError as erro:
         with erro:
-            print(
-                f"HTTP {erro.code}: {erro.read().decode('utf-8', errors='replace')}",
-                flush=True,
-            )
+            print(f"Medicao rejeitada: HTTP {erro.code} | {erro.read().decode()}", flush=True)
     except (URLError, TimeoutError, OSError) as erro:
-        print(
-            f"Falha ao enviar para {URL_API}: {erro}. Confira se a API esta iniciada.",
-            flush=True,
-        )
+        print(f"Envio sem confirmacao: {erro}", flush=True)
     return False
 
-
-def executar(quantidade=None):
-    taxa = REQUISICOES_POR_SEGUNDO
-    if (
-        isinstance(taxa, bool)
-        or not isinstance(taxa, (int, float))
-        or not math.isfinite(taxa)
-        or taxa <= 0
-    ):
-        raise ValueError(
-            "REQUISICOES_POR_SEGUNDO deve ser um numero finito maior que zero."
-        )
-    if quantidade is not None and (not isinstance(quantidade, int) or quantidade <= 0):
-        raise ValueError("A quantidade deve ser um inteiro maior que zero.")
-    intervalo = 1.0 / taxa
-    tentativas = sucessos = 0
-    proximo_envio = time.monotonic()
-    print(
-        f"Enviando para {URL_API} | {taxa} requisicoes/s | Ctrl+C para parar.",
-        flush=True,
-    )
+def executar(quantidade=None, sensor="todos", intervalo=INTERVALO_SEGUNDOS):
+    if intervalo <= 0 or not __import__("math").isfinite(intervalo):
+        raise ValueError("Intervalo deve ser positivo e finito.")
+    if quantidade is not None and quantidade < 1:
+        raise ValueError("Quantidade deve ser positiva.")
+    tipos = list(SENSORES) if sensor == "todos" else [sensor]
+    tentativas = aceitas = ciclos = 0
+    print(f"Alagamento | ponto={PONTO_ID} | destino={URL_API} | sensores={', '.join(tipos)}", flush=True)
+    print("Cada sensor envia um POST. A API junta os valores em ate 3 segundos. Ctrl+C encerra.", flush=True)
     try:
-        while quantidade is None or tentativas < quantidade:
-            time.sleep(max(0.0, proximo_envio - time.monotonic()))
-            tentativas += 1
-            if enviar_leitura(gerar_leitura()):
-                sucessos += 1
-            proximo_envio += intervalo
-            agora = time.monotonic()
-            if proximo_envio < agora:
-                # Pula horarios perdidos: nao acumula envios nem dispara rajadas.
-                perdidos = math.floor((agora - proximo_envio) / intervalo) + 1
-                proximo_envio += perdidos * intervalo
-                print("API lenta: taxa efetiva menor que a configurada.", flush=True)
+        while quantidade is None or ciclos < quantidade:
+            inicio = time.monotonic()
+            for tipo in tipos:
+                tentativas += 1
+                aceitas += enviar_medicao(gerar_medicao(tipo))
+            ciclos += 1
+            if quantidade is None or ciclos < quantidade:
+                time.sleep(max(0, intervalo - (time.monotonic() - inicio)))
     except KeyboardInterrupt:
-        print("\nGerador encerrado.", flush=True)
-    finally:
-        print(
-            f"Tentativas: {tentativas} | Salvas: {sucessos} | Sem confirmacao: {tentativas - sucessos}",
-            flush=True,
-        )
-    return tentativas, sucessos
-
+        print("Simulador encerrado.")
+    print(f"Resumo: {tentativas} POSTs | {aceitas} aceitos | {tentativas-aceitas} sem confirmacao.")
+    return tentativas, aceitas
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Gera leituras aleatorias para a API alagamento."
-    )
-    parser.add_argument(
-        "--quantidade", type=int, help="Limita o total de envios; omitido = continuo."
-    )
+    parser = argparse.ArgumentParser(description="Simula sensores individuais de alagamento.")
+    parser.add_argument("--sensor", choices=["todos", *SENSORES], default="todos")
+    parser.add_argument("--quantidade", type=int, help="Numero de ciclos; todos envia 3 POSTs por ciclo.")
+    parser.add_argument("--intervalo", type=float, default=INTERVALO_SEGUNDOS, help="Segundos entre ciclos.")
     args = parser.parse_args()
     try:
-        executar(args.quantidade)
+        total, aceitas = executar(args.quantidade, args.sensor, args.intervalo)
+        raise SystemExit(0 if total == aceitas else 1)
     except ValueError as erro:
         parser.error(str(erro))

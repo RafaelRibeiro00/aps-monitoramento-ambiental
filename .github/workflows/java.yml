@@ -1,0 +1,19 @@
+name: Java e Python
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B -ntp verify
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-testes
+          path: '**/target/surefire-reports/'

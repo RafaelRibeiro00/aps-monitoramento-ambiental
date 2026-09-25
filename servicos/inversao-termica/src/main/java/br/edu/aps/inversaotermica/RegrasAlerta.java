@@ -12,7 +12,7 @@ public final class RegrasAlerta {
         return Map.of("tipo", "CALOR_AR_SECO_POUCO_VENTO", "mensagem", "Condicao de atencao: calor, ar seco e pouco vento. Nao confirma inversao termica.", "limites", Map.of("temperatura_c_min", temperatura, "umidade_max", umidade, "vento_km_h_max", vento));
     }
     private static double limite(String nome, double padrao, double minimo, double maximo) {
-        String valor = System.getenv(nome);
+        String valor = Configuracao.valor(nome,null);
         double numero = valor == null ? padrao : Double.parseDouble(valor);
         if (!Double.isFinite(numero) || numero < minimo || numero > maximo)
             throw new IllegalArgumentException("Limite de alerta invalido: " + nome);

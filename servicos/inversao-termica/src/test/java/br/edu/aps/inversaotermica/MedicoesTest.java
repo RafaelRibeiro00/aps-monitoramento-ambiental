@@ -18,7 +18,7 @@ class MedicoesTest {
         var servidor = Api.criarServidor(0, arquivo);
         servidor.start();
         try {
-            var uri = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort() + "/leituras");
+            var uri = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort() + "/inversao-termica/leituras");
             var cliente = HttpClient.newHttpClient();
             String[] campos = {"temperatura_c", "vento_km_h"};
             double[] minimos = {-273.15, 0};
@@ -35,9 +35,10 @@ class MedicoesTest {
                     var json = JsonParser.parseString(VALIDO).getAsJsonObject();
                     json.addProperty(campos[i], valor);
                     var pedido = HttpRequest.newBuilder(uri).POST(HttpRequest.BodyPublishers.ofString(json.toString())).build();
-                    assertEquals(200, cliente.send(pedido, HttpResponse.BodyHandlers.ofString()).statusCode());
+                    assertEquals(202, cliente.send(pedido, HttpResponse.BodyHandlers.ofString()).statusCode());
                 }
             }
+            RuntimeTest.aguardar(() -> RuntimeTest.contar(arquivo, "leituras_inversaotermica") == 4);
             try (var c = DriverManager.getConnection("jdbc:sqlite:" + arquivo); var s = c.createStatement();
                  var r = s.executeQuery("SELECT count(*) FROM leituras_inversaotermica")) {
                 assertTrue(r.next());

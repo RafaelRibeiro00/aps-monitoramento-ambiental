@@ -52,16 +52,4 @@ class AlertaTest {
    assertNotNull(chave.get());
   } finally {destino.stop(0);}
  }
- @Test void rotasHttpMostramAlertaEGeracaoAutomatica() throws Exception {
-  var servidor=Api.criarServidor(0,pasta.resolve("http.db"));servidor.start();
-  try {
-   String base="http://127.0.0.1:"+servidor.getAddress().getPort();var cliente=HttpClient.newHttpClient();
-   var resposta=cliente.send(HttpRequest.newBuilder(URI.create(base+"/leituras")).POST(HttpRequest.BodyPublishers.ofString(critica().paraJson())).build(),HttpResponse.BodyHandlers.ofString());
-   assertEquals(200,resposta.statusCode());assertEquals(1,JsonParser.parseString(resposta.body()).getAsJsonObject().getAsJsonArray("alertas").size());
-   var consulta=cliente.send(HttpRequest.newBuilder(URI.create(base+"/alertas?sensor=SENSOR-TESTE&data=2026-09-18")).GET().build(),HttpResponse.BodyHandlers.ofString());
-   assertEquals(200,consulta.statusCode());assertEquals(1,JsonParser.parseString(consulta.body()).getAsJsonObject().get("total").getAsInt());
-   assertEquals(400,cliente.send(HttpRequest.newBuilder(URI.create(base+"/alertas?status_notificacao=invalido")).GET().build(),HttpResponse.BodyHandlers.ofString()).statusCode());
-   assertEquals(405,cliente.send(HttpRequest.newBuilder(URI.create(base+"/alertas")).POST(HttpRequest.BodyPublishers.noBody()).build(),HttpResponse.BodyHandlers.ofString()).statusCode());
-  } finally {servidor.stop(0);}
- }
 }

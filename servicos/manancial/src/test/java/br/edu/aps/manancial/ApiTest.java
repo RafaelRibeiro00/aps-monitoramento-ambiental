@@ -32,7 +32,7 @@ class ApiTest {
     static void iniciar() throws Exception {
         servidor = Api.criarServidor(0, temporario.resolve("api.db"));
         servidor.start();
-        destino = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort() + "/leituras");
+        destino = URI.create("http://127.0.0.1:" + servidor.getAddress().getPort() + "/manancial/leituras");
     }
 
     @AfterAll
@@ -42,11 +42,11 @@ class ApiTest {
 
     static Stream<Arguments> leituras() {
         return Stream.of(
-                Arguments.of("válida", VALIDO, 200, "sucesso"),
-                Arguments.of("zero válido", VALIDO.replace("68.5", "0"), 200, "sucesso"),
-                Arguments.of("limite 100", VALIDO.replace("68.5", "100"), 200, "sucesso"),
-                Arguments.of("fuso horário", VALIDO.replace("15:30:00Z", "12:30:00-03:00"), 200, "sucesso"),
-                Arguments.of("fração de segundo", VALIDO.replace("00Z", "00.123456789Z"), 200, "sucesso"),
+                Arguments.of("válida", VALIDO, 202, "sucesso"),
+                Arguments.of("zero válido", VALIDO.replace("68.5", "0"), 202, "sucesso"),
+                Arguments.of("limite 100", VALIDO.replace("68.5", "100"), 202, "sucesso"),
+                Arguments.of("fuso horário", VALIDO.replace("15:30:00Z", "12:30:00-03:00"), 202, "sucesso"),
+                Arguments.of("fração de segundo", VALIDO.replace("00Z", "00.123456789Z"), 202, "sucesso"),
                 Arguments.of("medida ausente", VALIDO.replace(",\"percentual_ocupado\":68.5", ""), 400, "percentual_ocupado"),
                 Arguments.of("medida null", VALIDO.replace("68.5", "null"), 400, "percentual_ocupado"),
                 Arguments.of("negativo", VALIDO.replace("68.5", "-0.1"), 400, "percentual_ocupado"),
@@ -86,7 +86,7 @@ class ApiTest {
         HttpResponse<String> resposta = enviar("POST", destino, corpo);
         assertEquals(status, resposta.statusCode(), resposta.body());
         assertTrue(resposta.headers().firstValue("Content-Type").orElse("").contains("application/json"));
-        String campo = status == 200 ? "mensagem" : "erro";
+        String campo = status == 202 ? "mensagem" : "erro";
         String mensagem = JsonParser.parseString(resposta.body()).getAsJsonObject().get(campo).getAsString();
         assertTrue(mensagem.contains(trecho), mensagem);
     }
@@ -95,7 +95,7 @@ class ApiTest {
     void rejeitarMetodoERota() throws Exception {
         HttpResponse<String> metodo = enviar("DELETE", destino, "");
         assertEquals(405, metodo.statusCode());
-        assertEquals("GET, POST", metodo.headers().firstValue("Allow").orElse(""));
+        assertEquals("POST", metodo.headers().firstValue("Allow").orElse(""));
         assertEquals(404, enviar("POST", destino.resolve("/outra"), VALIDO).statusCode());
     }
 

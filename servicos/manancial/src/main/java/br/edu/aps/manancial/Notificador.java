@@ -17,7 +17,7 @@ public final class Notificador implements AutoCloseable {
     });
 
     public Notificador(Banco banco) {
-        this(banco, System.getenv().getOrDefault("ALERTA_WEBHOOK_URL", ""), System.getenv().getOrDefault("ALERTA_WEBHOOK_TOKEN", ""));
+        this(banco, Configuracao.valor("ALERTA_WEBHOOK_URL", Configuracao.valor("MANANCIAL_WEBHOOK_URL", "")), Configuracao.valor("ALERTA_WEBHOOK_TOKEN", Configuracao.valor("MANANCIAL_WEBHOOK_TOKEN", "")));
     }
     Notificador(Banco banco, String url, String token) {
         this.banco = banco;
@@ -61,6 +61,7 @@ public final class Notificador implements AutoCloseable {
                     erro = e.getClass().getSimpleName();
                 }
                 banco.registrarEnvio(id, sucesso, tentativas, erro);
+                Log.info(sucesso ? "Alerta enviado ao webhook: " + id : "Alerta pendente: " + id + " | tentativa " + tentativas + " | " + erro);
             }
         } catch (java.sql.SQLException e) {
             System.err.println("Fila de alertas temporariamente indisponivel; nova tentativa no proximo ciclo.");

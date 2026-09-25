@@ -31,7 +31,7 @@ class ConsultaTest {
    try(var c=DriverManager.getConnection("jdbc:sqlite:"+arquivo);var sql=c.createStatement()) {
     sql.execute("DROP TABLE leituras_alagamento");
    }
-   assertEquals(500,get(servidor, "").statusCode());
+   assertEquals(503,get(servidor, "").statusCode());
   } finally { servidor.stop(0); }
  }
  @Test void rejeitaFiltrosInvalidos() throws Exception {
@@ -42,7 +42,7 @@ class ConsultaTest {
   } finally { servidor.stop(0); }
  }
  private HttpResponse<String> get(HttpServer s,String query) throws Exception {
-  return HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+s.getAddress().getPort()+"/leituras"+query)).GET().build(),HttpResponse.BodyHandlers.ofString());
+  return HttpClient.newHttpClient().send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+s.getAddress().getPort()+"/alagamento/historico"+query)).GET().build(),HttpResponse.BodyHandlers.ofString());
  }
  private JsonObject json(HttpServer s,String query) throws Exception {
   var r=get(s,query);assertEquals(200,r.statusCode(),r.body());return JsonParser.parseString(r.body()).getAsJsonObject();

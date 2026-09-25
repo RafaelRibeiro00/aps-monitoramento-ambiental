@@ -1,130 +1,80 @@
 package br.edu.aps.inversaotermica;
-
-import com.google.gson.Gson;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
-
+import com.sun.net.httpserver.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class Api {
-    public static final int PORTA = Integer.parseInt(System.getenv().getOrDefault("APS_PORT", "8083"));
-    private static final Gson JSON = new com.google.gson.GsonBuilder().serializeNulls().create();
-    private static final String HOST = System.getenv().getOrDefault("APS_HOST", "127.0.0.1");
-
+    public static final int PORTA=Integer.parseInt(Configuracao.valor("APS_PORT",Configuracao.valor("INVERSAO_TERMICA_PORT","8083")));
+    private static final String HOST=Configuracao.valor("APS_HOST","127.0.0.1");
+    private static final String PREFIXO="/inversao-termica";
     public static void main(String[] args) throws IOException {
-        HttpServer servidor = criarServidor(PORTA);
-        Notificador notificador = new Notificador(new Banco(Banco.caminhoPadrao()));
-        notificador.iniciar();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> { notificador.close(); servidor.stop(0); }));
+        Path arquivo=Banco.caminhoPadrao();
+        if(args.length>0 && "--migrar-banco".equals(args[0])) {new Banco(arquivo);Log.info("Migracao concluida. Nenhum servidor iniciado.");return;}
+        HttpServer servidor=criarServidor(PORTA,arquivo);
+        Notificador notificador=new Notificador(new Banco(arquivo));notificador.iniciar();
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{notificador.close();servidor.stop(0);}));
         servidor.start();
-        System.out.println("API inversao-termica: http://" + HOST + ":" + PORTA + "/leituras");
-        System.out.println("Aguardando POST do Postman ou de outro cliente. Use Stop no IntelliJ para encerrar.");
+        Log.info("API iniciada: http://"+HOST+":"+PORTA+PREFIXO);
+        Log.info("POST /leituras | GET /historico | SSE /tempo-real | GET /alertas | GET /alertas-historico");
     }
-
-    // Porta zero permite que os testes usem uma porta livre.
-    public static HttpServer criarServidor(int porta) throws IOException {
-        return criarServidor(porta, Banco.caminhoPadrao());
+    public static HttpServer criarServidor(int porta) throws IOException {return criarServidor(porta,Banco.caminhoPadrao());}
+    public static HttpServer criarServidor(int porta,Path arquivo) throws IOException {
+        Banco banco=new Banco(arquivo);Fluxo fluxo=new Fluxo(banco,arquivo);
+        HttpServer servidor;
+        try{servidor=HttpServer.create(new InetSocketAddress(HOST,porta),128);}catch(IOException e){fluxo.close();throw e;}
+        ThreadPoolExecutor executor=new ThreadPoolExecutor(32,32,0,TimeUnit.SECONDS,new ArrayBlockingQueue<>(256),r->{Thread t=new Thread(r,"http-inversao-termica");t.setDaemon(true);return t;});
+        servidor.setExecutor(executor);servidor.createContext("/",r->receber(r,banco,fluxo));
+        return new ServidorHttp(servidor,fluxo,executor);
     }
-
-    public static HttpServer criarServidor(int porta, java.nio.file.Path arquivo) throws IOException {
-        Banco banco = new Banco(arquivo);
-        HttpServer servidor = HttpServer.create(new InetSocketAddress(HOST, porta), 0);
-        servidor.createContext("/", requisicao -> receber(requisicao, banco));
-        return servidor;
-    }
-
-    private static void receber(HttpExchange requisicao, Banco banco) throws IOException {
+    private static void receber(HttpExchange r,Banco banco,Fluxo fluxo) throws IOException {
         try {
-            String rota = requisicao.getRequestURI().getPath();
-            if ("/health/live".equals(rota) || "/health/ready".equals(rota)) {
-                if (!"GET".equals(requisicao.getRequestMethod())) {
-                    requisicao.getResponseHeaders().set("Allow", "GET");
-                    responder(requisicao, 405, "erro", "Use GET para consultar a saude.");
-                    return;
+            String origem=r.getRequestHeaders().getFirst("Origin");
+            if(origem!=null) {
+                var permitidas=Arrays.asList(Configuracao.valor("APS_CORS_ORIGINS","").split(","));
+                if(permitidas.stream().map(String::strip).anyMatch(origem::equals)) {
+                    r.getResponseHeaders().set("Access-Control-Allow-Origin",origem);r.getResponseHeaders().set("Vary","Origin");
+                } else {responder(r,403,Map.of("erro","Origem nao permitida. Configure APS_CORS_ORIGINS."));return;}
+            }
+            String rota=r.getRequestURI().getPath();String metodo=r.getRequestMethod();
+            if("OPTIONS".equals(metodo)) {
+                r.getResponseHeaders().set("Access-Control-Allow-Methods","GET, POST, OPTIONS");r.getResponseHeaders().set("Access-Control-Allow-Headers","Content-Type, Last-Event-ID");r.sendResponseHeaders(204,-1);return;
+            }
+            if(rota.equals("/health/live")||rota.equals("/health/ready")) {
+                if(!exigir(r,"GET"))return;
+                boolean pronto=rota.endsWith("live")||(banco.pronto()&&fluxo.disponivel());responder(r,pronto?200:503,Map.of("status",pronto?"ok":"indisponivel"));return;
+            }
+            if(!rota.startsWith(PREFIXO+"/")){responder(r,404,Map.of("erro","Rota inexistente. Use o prefixo "+PREFIXO));return;}
+            rota=rota.substring(PREFIXO.length());
+            switch(rota) {
+                case "/leituras" -> {
+                    if(!exigir(r,"POST"))return;
+                    byte[] corpo=r.getRequestBody().readNBytes(4097);if(corpo.length>4096){responder(r,400,Map.of("erro","O corpo deve ter no maximo 4096 bytes."));return;}
+                    responder(r,202,fluxo.receber(new String(corpo,StandardCharsets.UTF_8)));
                 }
-                boolean pronto = "/health/live".equals(rota) || banco.pronto();
-                responder(requisicao, pronto ? 200 : 503, "status", pronto ? "ok" : "indisponivel");
-                return;
-            }
-            if ("/alertas".equals(rota)) {
-                if (!"GET".equals(requisicao.getRequestMethod())) {
-                    requisicao.getResponseHeaders().set("Allow", "GET");
-                    responder(requisicao, 405, "erro", "Use GET para consultar alertas; eles sao gerados automaticamente por POST /leituras.");
-                    return;
+                case "/historico" -> {if(exigir(r,"GET"))responder(r,200,banco.consultar(Consulta.deQuery(r.getRequestURI().getRawQuery())));}
+                case "/alertas-historico" -> {if(exigir(r,"GET"))responder(r,200,banco.consultarAlertas(Consulta.deQuery(r.getRequestURI().getRawQuery(),true)));}
+                case "/alertas" -> {
+                    if(!exigir(r,"GET"))return;
+                    if(r.getRequestURI().getRawQuery()!=null)throw new IllegalArgumentException("Use /alertas-historico para consultar com filtros.");
+                    responder(r,200,Map.of("alertas",fluxo.recentes.listar()));
                 }
-                try {
-                    responderJson(requisicao, 200, banco.consultarAlertas(Consulta.deQuery(requisicao.getRequestURI().getRawQuery(), true)));
-                } catch (IllegalArgumentException e) {
-                    responder(requisicao, 400, "erro", e.getMessage());
-                } catch (java.sql.SQLException e) {
-                    responder(requisicao, 500, "erro", "Nao foi possivel consultar os alertas.");
-                }
-                return;
+                case "/tempo-real" -> {if(exigir(r,"GET"))fluxo.sse.conectar(r);}
+                default -> responder(r,404,Map.of("erro","Rota inexistente."));
             }
-            if (!"/leituras".equals(requisicao.getRequestURI().getPath())) {
-                responder(requisicao, 404, "erro", "Rota não encontrada; use /leituras.");
-                return;
-            }
-            if ("GET".equals(requisicao.getRequestMethod())) {
-                try {
-                    Consulta consulta = Consulta.deQuery(requisicao.getRequestURI().getRawQuery());
-                    responderJson(requisicao, 200, banco.consultar(consulta));
-                } catch (IllegalArgumentException e) {
-                    responder(requisicao, 400, "erro", e.getMessage());
-                } catch (java.sql.SQLException e) {
-                    System.err.println("Falha ao consultar leituras: " + e.getMessage());
-                    responder(requisicao, 500, "erro", "Nao foi possivel consultar as leituras.");
-                }
-                return;
-            }
-            if (!"POST".equals(requisicao.getRequestMethod())) {
-                requisicao.getResponseHeaders().set("Allow", "GET, POST");
-                responder(requisicao, 405, "erro", "Use GET para consultar ou POST para enviar uma leitura.");
-                return;
-            }
-            byte[] bytes = requisicao.getRequestBody().readNBytes(4097);
-            if (bytes.length > 4096) {
-                responder(requisicao, 400, "erro", "O corpo deve ter no máximo 4096 bytes.");
-                return;
-            }
-
-            Leitura leitura;
-            try {
-                leitura = Leitura.deJson(new String(bytes, StandardCharsets.UTF_8));
-            } catch (IllegalArgumentException e) {
-                responder(requisicao, 400, "erro", e.getMessage());
-                return;
-            }
-
-            try {
-                var resultado = banco.salvar(leitura);
-                System.out.println("Leitura salva: " + leitura.paraJson());
-                if (!((java.util.List<?>)resultado.get("alertas")).isEmpty())
-                    System.out.println("ALERTA: " + JSON.toJson(resultado.get("alertas")));
-                responderJson(requisicao, 200, resultado);
-            } catch (java.sql.SQLException e) {
-                System.err.println("Falha ao salvar leitura: " + e.getMessage());
-                responder(requisicao, 500, "erro", "Nao foi possivel salvar a leitura. Tente novamente.");
-                return;
-            }
-
-        } finally {
-            requisicao.close();
-        }
+        } catch(Fluxo.Conflito e){responder(r,409,Map.of("erro",e.getMessage()));}
+        catch(IllegalArgumentException e){responder(r,400,Map.of("erro",e.getMessage()==null?"Entrada invalida":e.getMessage()));}
+        catch(java.sql.SQLException e){Log.info("Consulta indisponivel: banco ocupado ou inacessivel.");responder(r,503,Map.of("erro","Banco temporariamente indisponivel."));}
+        catch(IOException e){Log.info("Recebimento indisponivel: "+e.getClass().getSimpleName());r.getResponseHeaders().set("Retry-After","3");responder(r,503,Map.of("erro","Nao foi possivel confirmar o recebimento. Tente novamente."));}
+        finally{r.close();}
     }
-
-    private static void responder(HttpExchange requisicao, int status,
-                                  String campo, String mensagem) throws IOException {
-        responderJson(requisicao, status, Map.of(campo, mensagem));
+    private static boolean exigir(HttpExchange r,String metodo) throws IOException {
+        if(r.getRequestMethod().equals(metodo))return true;r.getResponseHeaders().set("Allow",metodo);responder(r,405,Map.of("erro","Use "+metodo+" nesta rota."));return false;
     }
-
-    private static void responderJson(HttpExchange requisicao, int status, Object dados) throws IOException {
-        byte[] corpo = JSON.toJson(dados).getBytes(StandardCharsets.UTF_8);
-        requisicao.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
-        requisicao.sendResponseHeaders(status, corpo.length);
-        requisicao.getResponseBody().write(corpo);
+    private static void responder(HttpExchange r,int status,Object dados) throws IOException {
+        byte[] corpo=Fluxo.JSON.toJson(dados).getBytes(StandardCharsets.UTF_8);r.getResponseHeaders().set("Content-Type","application/json; charset=utf-8");r.sendResponseHeaders(status,corpo.length);r.getResponseBody().write(corpo);
     }
 }

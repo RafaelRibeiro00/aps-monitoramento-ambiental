@@ -22,3 +22,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Arquivos locais do Windows e filas duraveis
+desktop.ini
+*.fila-*/

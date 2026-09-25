@@ -1,4 +1,4 @@
-"""Configuracao compartilhada com o Docker Compose, sem dependencias externas."""
+"""Configuracao compartilhada entre Java e os clientes, sem dependencias externas."""
 import os
 from pathlib import Path
 
@@ -17,7 +17,8 @@ def obter(nome, padrao):
 
 def url_api(servico, porta):
     host = obter("APS_CLIENT_HOST", "127.0.0.1")
-    return obter(servico + "_URL", f"http://{host}:{obter(servico + '_PORT', str(porta))}/leituras")
+    prefixo = servico.lower().replace("_", "-")
+    return obter(servico + "_URL", f"http://{host}:{obter(servico + '_PORT', str(porta))}/{prefixo}/leituras")
 
 def banco_docker():
     pasta = Path(obter("APS_DATA_DIR", "./dados")).expanduser()

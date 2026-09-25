@@ -33,8 +33,8 @@ def enviar_leitura(leitura):
     try:
         with urlopen(pedido, timeout=TEMPO_LIMITE_SEGUNDOS) as resposta:
             mensagem = resposta.read().decode("utf-8", errors="replace")
-            print(f"HTTP {resposta.status} | {corpo.decode('utf-8')} | {mensagem}", flush=True)
-            return resposta.status == 200
+            print(f"Leitura recebida pela API (gravacao agendada) | HTTP {resposta.status} | {corpo.decode('utf-8')} | {mensagem}", flush=True)
+            return resposta.status == 202
     except HTTPError as erro:
         with erro:
             print(f"HTTP {erro.code}: {erro.read().decode('utf-8', errors='replace')}", flush=True)
@@ -69,7 +69,7 @@ def executar(quantidade=None):
     except KeyboardInterrupt:
         print("\nGerador encerrado.", flush=True)
     finally:
-        print(f"Tentativas: {tentativas} | Salvas: {sucessos} | Sem confirmacao: {tentativas - sucessos}", flush=True)
+        print(f"Tentativas: {tentativas} | Aceitas: {sucessos} | Sem confirmacao: {tentativas - sucessos}", flush=True)
     return tentativas, sucessos
 
 

@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 
 /** Aceita somente campos conhecidos; valores sao sempre parametros SQL. */
-public record Consulta(String where, List<Object> valores, int limite, int offset) {
+public record Consulta(String where, List<Object> valores, int limite, int offset, String ordem) {
     private static final List<String> MEDIDAS = List.of("percentual_ocupado", "nivel_agua_m", "temperatura_agua_c");
 
     public static Consulta deQuery(String query) { return deQuery(query, false); }
@@ -22,7 +22,7 @@ public record Consulta(String where, List<Object> valores, int limite, int offse
                     throw new IllegalArgumentException("Parametro vazio ou repetido: " + nome);
             }
         }
-        Set<String> permitidos = new HashSet<>(List.of("sensor", "area", "data", "data_inicio", "data_fim", "limite", "offset"));
+        Set<String> permitidos = new HashSet<>(List.of("sensor", "area", "data", "data_inicio", "data_fim", "limite", "offset", "ordem"));
         for (String medida : MEDIDAS) {
             permitidos.add(medida);
             permitidos.add(medida + "_min");
@@ -71,9 +71,11 @@ public record Consulta(String where, List<Object> valores, int limite, int offse
             if (minimo != null) adicionar(condicoes, valores, medida + " >= ?", minimo);
             if (maximo != null) adicionar(condicoes, valores, medida + " <= ?", maximo);
         }
+        String ordem = parametros.getOrDefault("ordem", "asc");
+        if (!java.util.Set.of("asc", "desc").contains(ordem)) throw new IllegalArgumentException("ordem deve ser asc ou desc.");
         int limite = inteiro(parametros.getOrDefault("limite", "100"), "limite", 1, 1000);
         int offset = inteiro(parametros.getOrDefault("offset", "0"), "offset", 0, Integer.MAX_VALUE);
-        return new Consulta(condicoes.isEmpty() ? "" : " WHERE " + String.join(" AND ", condicoes), List.copyOf(valores), limite, offset);
+        return new Consulta(condicoes.isEmpty() ? "" : " WHERE " + String.join(" AND ", condicoes), List.copyOf(valores), limite, offset, ordem.toUpperCase(java.util.Locale.ROOT));
     }
 
     private static void adicionar(List<String> condicoes, List<Object> valores, String sql, Object valor) {

@@ -13,6 +13,10 @@ def limpar_banco(caminho=BANCO):
     caminho = Path(caminho).resolve()
     if not caminho.is_file():
         raise FileNotFoundError(f"Banco nao encontrado: {caminho}")
+    # Uma fila persistente antiga recolocaria dados no banco depois da limpeza.
+    for pasta in caminho.parent.glob(caminho.name + ".fila-*"):
+        if any(pasta.rglob("*.json")):
+            raise OSError("Ha medicoes pendentes na fila. Inicie as APIs para concluir a gravacao, pare-as e tente novamente.")
     # mode=rw impede a criacao acidental de um banco vazio em outro caminho.
     with closing(sqlite3.connect(caminho.as_uri() + "?mode=rw", uri=True, timeout=10)) as conexao:
         with conexao:
@@ -20,7 +24,7 @@ def limpar_banco(caminho=BANCO):
             removidos = {}
             existentes = {linha[0] for linha in conexao.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             # Remove as notificacoes pendentes junto das leituras para nao envia-las apos a limpeza.
-            for tabela in ("alertas_manancial", "alertas_alagamento", "alertas_inversaotermica"):
+            for tabela in ("alertas_manancial", "alertas_alagamento", "alertas_inversaotermica", "medicoes_alagamento"):
                 if tabela in existentes:
                     removidos[tabela] = conexao.execute(f"DELETE FROM {tabela}").rowcount
             for tabela in TABELAS:
@@ -32,7 +36,7 @@ def limpar_banco(caminho=BANCO):
 
 if __name__ == "__main__":
     print(f"Limpando todas as leituras de: {BANCO}")
-    print("Pare os geradores antes: novos envios podem preencher o banco novamente.")
+    print("Pare as APIs e os geradores antes da limpeza. Filas pendentes impedem a limpeza.")
     try:
         removidos = limpar_banco()
     except (sqlite3.Error, OSError) as erro:
