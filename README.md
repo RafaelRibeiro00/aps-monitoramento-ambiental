@@ -178,4 +178,4 @@ mvn -B -ntp verify
 python -m unittest discover -s scripts -p "test_*.py"
 ```
 
-O GitHub Actions executa esses testes em Linux com Java 17, sem construir imagens Docker. Cobertura: validações, migração, filtros, banco bloqueado sem travar SSE, fila após restart, gravação idempotente, agrupamento completo/incompleto, expiração de alertas e webhook com falha/recuperação. A capacidade máxima de requisições ainda não foi medida; limites de fila não são uma promessa de desempenho.
+O GitHub Actions executa esses testes em Linux com Java 17, sem construir imagens Docker. Tambem inicia as tres APIs e executa os simuladores reais pelo roteiro `scripts/validar_local.py`, verificando POST, historico e SSE. Cobertura: validações, migração, filtros, banco bloqueado sem travar SSE, fila após restart, gravação idempotente, agrupamento completo/incompleto, expiração de alertas e webhook com falha/recuperação. A capacidade máxima de requisições ainda não foi medida; limites de fila não são uma promessa de desempenho.

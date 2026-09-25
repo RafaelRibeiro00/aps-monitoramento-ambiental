@@ -22,3 +22,11 @@ A compilacao Java local passou. O Windows bloqueou o carregamento de sqlitejdbc.
 Por orientacao final do usuario, Docker ficou fora desta entrega: nenhuma imagem foi gerada. Tentativas anteriores de inicializacao para limpeza encontraram erro em sockets temporarios; nao foi concluida a remocao dos containers/imagens. Nao foi feito reset de fabrica nem apagado volume/banco. A pasta temporaria de sockets Docker/run foi preservada como Docker/run.backup-20260925 durante o diagnostico, antes da orientacao de interromper.
 
 Ainda nao foi medida a capacidade maxima de requisicoes por segundo. As filas e limites implementados nao equivalem a um teste de carga.
+
+## Validacao final
+
+Execucao: https://github.com/RafaelRibeiro00/aps-monitoramento-ambiental/actions/runs/36142798190
+
+Aprovados: 109 testes Java, 2 testes Python e integracao com tres processos Java reais, 10 POSTs dos simuladores, 6 leituras consolidadas no SQLite e eventos SSE nas tres APIs. Nenhum Docker foi usado. A compilacao final tambem passou no Windows; a execucao local continua bloqueada pela politica de carregamento da DLL SQLite.
+
+A publicacao foi feita por um checkout temporario porque a pasta do Google Drive apresentou travas Git antigas. Os arquivos locais foram preservados; nenhuma exclusao das imagens pessoais ja ausentes foi incluida nos commits.
