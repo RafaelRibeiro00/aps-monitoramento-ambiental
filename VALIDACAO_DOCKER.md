@@ -1,3 +1,5 @@
+> Registro historico da versao Docker 1.2.0. Nao representa a nova entrega SSE; consulte VALIDACAO_ATUAL.md. Nenhuma imagem nova foi gerada nesta etapa.
+
 # APS — validação da etapa de conteinerização
 
 Validação realizada em 18/09/2026. Domínio: monitoramento ambiental de mananciais, alagamentos e inversão térmica. Repositório: https://github.com/RafaelRibeiro00/aps-monitoramento-ambiental.

@@ -188,7 +188,7 @@ public final class Banco {
                 try (var rs = comando.executeQuery()) { total = rs.getLong(1); }
             }
             var alertas = new java.util.ArrayList<java.util.Map<String, Object>>();
-            try (var comando = conexao.prepareStatement("SELECT *" + origem + consulta.where() + " ORDER BY id " + consulta.ordem() + " LIMIT ? OFFSET ?")) {
+            try (var comando = conexao.prepareStatement("SELECT *" + origem + consulta.where() + " ORDER BY julianday(criado_em) " + consulta.ordem() + ", id " + consulta.ordem() + " LIMIT ? OFFSET ?")) {
                 preencher(comando, consulta.valores());
                 comando.setInt(consulta.valores().size()+1, consulta.limite());
                 comando.setInt(consulta.valores().size()+2, consulta.offset());
@@ -204,7 +204,7 @@ public final class Banco {
             }
             conexao.commit();
             return java.util.Map.of("total", total, "limite", consulta.limite(), "offset", consulta.offset(), "alertas", alertas,
-                    "webhook_configurado", !System.getenv().getOrDefault("ALERTA_WEBHOOK_URL", "").isBlank());
+                    "webhook_configurado", !Configuracao.valor("ALERTA_WEBHOOK_URL", Configuracao.valor("INVERSAO_TERMICA_WEBHOOK_URL", "")).isBlank());
         }
     }
 

@@ -43,6 +43,7 @@ final class Fluxo implements AutoCloseable {
             }
         }
         gravador.scheduleWithFixedDelay(this::gravarPendentes,50,100,TimeUnit.MILLISECONDS);
+        agrupador.scheduleWithFixedDelay(recentes::listar,1,1,TimeUnit.SECONDS);
         agrupador.scheduleWithFixedDelay(()->{try{expirar();}catch(Exception e){Log.info("Agrupamento pendente: "+e.getClass().getSimpleName());}},100,50,TimeUnit.MILLISECONDS);
     }
     synchronized Map<String,Object> receber(String corpo) throws IOException {
