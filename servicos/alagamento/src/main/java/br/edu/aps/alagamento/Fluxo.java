@@ -53,10 +53,12 @@ final class Fluxo implements AutoCloseable {
         Leitura leitura=Leitura.deJson(corpo);
         JsonObject evento=evento("leitura",JSON.toJsonTree(leitura).getAsJsonObject());
         evento.add("alertas",alertas(leitura,evento));
-        fila.adicionar(evento);
+        if ("sincrona".equals(System.getProperty("aps.escrita",Configuracao.valor("APS_ESCRITA","assincrona")))) {
+            try { banco.persistir(evento); } catch(java.sql.SQLException e) { throw new IOException("Gravacao sincrona falhou",e); }
+        } else fila.adicionar(evento);
         publicar(evento);
         Log.info("Leitura recebida: "+evento.get("evento_id").getAsString()+" | gravacao pendente.");
-        return Map.of("mensagem","Leitura recebida com sucesso; gravacao agendada.","evento_id",evento.get("evento_id").getAsString(),"persistencia","pendente");
+        return Map.of("mensagem","Leitura recebida com sucesso; gravacao agendada.","evento_id",evento.get("evento_id").getAsString(),"persistencia", "sincrona".equals(System.getProperty("aps.escrita",Configuracao.valor("APS_ESCRITA","assincrona")))?"concluida":"pendente");
     }
     private JsonObject evento(String tipo,JsonObject dados) {
         JsonObject e=new JsonObject();e.addProperty("evento_id",UUID.randomUUID().toString());e.addProperty("tipo_evento",tipo);
@@ -103,7 +105,7 @@ final class Fluxo implements AutoCloseable {
         String tipo=d.get("tipo").getAsString();Double v=d.get("valor").getAsDouble();
         return new Leitura(d.get("ponto_id").getAsString(),d.get("timestamp").getAsString(),"nivel_corrego".equals(tipo)?v:null,"chuva".equals(tipo)?v:null,"velocidade_agua".equals(tipo)?v:null);
     }
-    private JsonObject validarMedicao(String corpo) {
+    static JsonObject validarMedicao(String corpo) {
         JsonElement parsed;
         try{parsed=JSON.fromJson(corpo,JsonElement.class);}catch(JsonParseException e){throw new IllegalArgumentException("JSON invalido.");}
         if(parsed==null||!parsed.isJsonObject())throw new IllegalArgumentException("Envie um objeto JSON de medicao individual.");
@@ -145,6 +147,10 @@ final class Fluxo implements AutoCloseable {
         } catch(Exception e) {
             if(System.currentTimeMillis()-ultimoErro>5000){ultimoErro=System.currentTimeMillis();Log.info("Banco indisponivel ou gravacao pendente: fila preservada; nova tentativa automatica.");}
         }
+    }
+    synchronized Map<String,Object> metricas() throws IOException {
+        return Map.of("fila_pendente",fila.tamanho(),"grupos_abertos",grupos.size(),
+            "escrita",Configuracao.valor("APS_ESCRITA","assincrona"));
     }
     synchronized boolean disponivel(){try{return !encerrado&&fila.tamanho()+grupos.size()<limite;}catch(IOException e){return false;}}
     @Override public void close() {

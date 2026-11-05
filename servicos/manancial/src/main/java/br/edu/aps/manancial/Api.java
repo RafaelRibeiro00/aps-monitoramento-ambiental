@@ -12,11 +12,12 @@ public class Api {
     private static final String HOST=Configuracao.valor("APS_HOST","127.0.0.1");
     private static final String PREFIXO="/manancial";
     public static void main(String[] args) throws IOException {
+        if (!Configuracao.valor("APS_COORDENADOR", "").isBlank()) { Replica.iniciar(PORTA); return; }
         Path arquivo=Banco.caminhoPadrao();
         if(args.length>0 && "--migrar-banco".equals(args[0])) {new Banco(arquivo);Log.info("Migracao concluida. Nenhum servidor iniciado.");return;}
         HttpServer servidor=criarServidor(PORTA,arquivo);
         Notificador notificador=new Notificador(new Banco(arquivo));notificador.iniciar();
-        Runtime.getRuntime().addShutdownHook(new Thread(()->{notificador.close();servidor.stop(0);}));
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{notificador.close();servidor.stop(10);}));
         servidor.start();
         Log.info("API iniciada: http://"+HOST+":"+PORTA+PREFIXO);
         Log.info("POST /leituras | GET /historico | SSE /tempo-real | GET /alertas | GET /alertas-historico");
@@ -31,6 +32,9 @@ public class Api {
         return new ServidorHttp(servidor,fluxo,executor);
     }
     private static void receber(HttpExchange r,Banco banco,Fluxo fluxo) throws IOException {
+        r.getResponseHeaders().set("X-Pod",Configuracao.valor("POD_NAME","local"));
+        r.getResponseHeaders().set("X-Versao",Configuracao.valor("APS_VERSAO","3.0.0"));
+        r.getResponseHeaders().set("Access-Control-Expose-Headers","X-Pod, X-Versao");
         try {
             String origem=r.getRequestHeaders().getFirst("Origin");
             if(origem!=null) {
@@ -55,6 +59,7 @@ public class Api {
                     byte[] corpo=r.getRequestBody().readNBytes(4097);if(corpo.length>4096){responder(r,400,Map.of("erro","O corpo deve ter no maximo 4096 bytes."));return;}
                     responder(r,202,fluxo.receber(new String(corpo,StandardCharsets.UTF_8)));
                 }
+                case "/metricas" -> {if(exigir(r,"GET"))responder(r,200,fluxo.metricas());}
                 case "/historico" -> {if(exigir(r,"GET"))responder(r,200,banco.consultar(Consulta.deQuery(r.getRequestURI().getRawQuery())));}
                 case "/alertas-historico" -> {if(exigir(r,"GET"))responder(r,200,banco.consultarAlertas(Consulta.deQuery(r.getRequestURI().getRawQuery(),true)));}
                 case "/alertas" -> {

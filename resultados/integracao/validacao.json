@@ -1,0 +1,62 @@
+{
+  "inicio": "2026-11-05T16:32:34+00:00",
+  "identificador": "INTEGRACAO-a23fa3b35b",
+  "servicos": {
+    "manancial": {
+      "post": 202,
+      "sse": true,
+      "historico": true,
+      "alertas": true,
+      "evento_id": "1e28a1c4-df19-4fbb-94bd-8ec25fb6654e",
+      "headers": {
+        "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
+        "Content-Type": "application/json; charset=utf-8",
+        "Date": "Thu, 05 Nov 2026 16:32:34 GMT",
+        "X-Backend-Pod": "manancial-estado-0",
+        "X-Pod": "manancial-7c5dc897d-t25gk",
+        "X-Versao": "3.0.0",
+        "Connection": "close",
+        "Transfer-Encoding": "chunked"
+      }
+    },
+    "alagamento": {
+      "post": 202,
+      "sse": true,
+      "historico": true,
+      "alertas": true,
+      "evento_id": "7b4fe2a2-71d9-4af1-9a31-7d036e8c15f6",
+      "headers": {
+        "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
+        "Content-Type": "application/json; charset=utf-8",
+        "Date": "Thu, 05 Nov 2026 16:32:35 GMT",
+        "X-Backend-Pod": "alagamento-estado-0",
+        "X-Pod": "alagamento-8555cd7897-k684r",
+        "X-Versao": "3.0.0",
+        "Connection": "close",
+        "Transfer-Encoding": "chunked"
+      }
+    },
+    "inversao-termica": {
+      "post": 202,
+      "sse": true,
+      "historico": true,
+      "alertas": true,
+      "evento_id": "4002ef77-815f-413a-8844-d7acd791aa31",
+      "headers": {
+        "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
+        "Content-Type": "application/json; charset=utf-8",
+        "Date": "Thu, 05 Nov 2026 16:32:36 GMT",
+        "X-Backend-Pod": "inversao-termica-estado-0",
+        "X-Pod": "inversao-termica-5f6586b599-lg2z6",
+        "X-Versao": "3.0.0",
+        "Connection": "close",
+        "Transfer-Encoding": "chunked"
+      }
+    }
+  },
+  "distribuicao": [
+    "manancial-7c5dc897d-77rjz",
+    "manancial-7c5dc897d-t25gk"
+  ],
+  "persistencia_apos_restart": true
+}

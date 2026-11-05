@@ -4,7 +4,21 @@ Três APIs Java 17: **manancial (8081)**, **alagamento (8082)** e **inversão t�
 
 ## Estado desta entrega
 
-Código atualizado para execução local, com filas persistentes e rotas novas. **Nenhuma imagem Docker foi construída nesta etapa.** Dockerfiles e Compose anteriores permanecem como material da etapa anterior; não representam uma versão Docker validada do fluxo novo. Consulte `VALIDACAO_ATUAL.md` para os resultados e limitações do ambiente.
+Imagens Docker **2.0.0** construídas e validadas com as novas rotas, SSE, alertas e agrupamento. Há uma imagem e um contêiner por API: `cont-manancial`, `cont-alagamento` e `cont-inversao-termica`. Veja `VALIDACAO_DOCKER.md`.
+
+## Executar no Docker
+
+```powershell
+docker compose up -d --wait
+docker compose ps
+docker compose logs -f
+```
+
+Neste computador, o `.env` publica manancial em **9081**, alagamento em **9082** e inversão térmica em **9083**. As portas internas continuam 8081/8082/8083. Os simuladores Python leem as portas do mesmo `.env`. Use Containers no Docker Desktop para iniciar/parar os contêineres existentes; um novo Run em Images não recebe automaticamente esta configuração.
+
+O banco persistente está em `C:/Users/Rafae/APS-Docker/dados/aps.db` (configurado por `APS_DATA_DIR` e `APS_DB_FILE`). Abra esse arquivo no DB Browser for SQLite e atualize a visualização após novos envios. Não execute simultaneamente a mesma API no IntelliJ e no Docker usando esse banco/fila.
+
+Para reconstruir após alterações: `docker compose build` e `docker compose up -d --wait`. Para validar as imagens sem alterar o banco principal: `python scripts/validar_docker.py`. O roteiro usa contêineres e banco temporários e os remove ao terminar.
 
 ## Rotas
 
@@ -178,4 +192,11 @@ mvn -B -ntp verify
 python -m unittest discover -s scripts -p "test_*.py"
 ```
 
-O GitHub Actions executa esses testes em Linux com Java 17, sem construir imagens Docker. Tambem inicia as tres APIs e executa os simuladores reais pelo roteiro `scripts/validar_local.py`, verificando POST, historico e SSE. Cobertura: validações, migração, filtros, banco bloqueado sem travar SSE, fila após restart, gravação idempotente, agrupamento completo/incompleto, expiração de alertas e webhook com falha/recuperação. A capacidade máxima de requisições ainda não foi medida; limites de fila não são uma promessa de desempenho.
+O GitHub Actions executa esses testes em Linux com Java 17, sem construir imagens Docker. Tambem inicia as tres APIs e executa os simuladores reais pelo roteiro `scripts/validar_local.py`, verificando POST, historico e SSE. Cobertura: validações, migração, filtros, banco bloqueado sem travar SSE, fila após restart, gravação idempotente, agrupamento completo/incompleto, expiração de alertas e webhook com falha/recuperação. A medição local das Etapas 4 e 5 está documentada em `VALIDACAO_ETAPAS_4_5.md`; ela descreve esta máquina e não é uma promessa de capacidade em produção.
+# Experimentos das etapas 4 e 5
+
+O laboratório Kubernetes e os testes de carga ficam separados do Compose original.
+Consulte [k8s/README.md](k8s/README.md) para arquitetura, preparação, comandos,
+hipóteses e limitações. O gerador autoral é `carga/loadgen.py`; a execução dos
+experimentos está em `scripts/experimentos.py`. Os CSVs, gráficos e relatórios
+medidos ficam em `resultados/`. O banco pessoal existente não é usado nos testes.

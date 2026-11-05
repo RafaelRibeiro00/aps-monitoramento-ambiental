@@ -1,0 +1,236 @@
+{
+  "inicio": "2026-11-05T16:47:43.350+00:00",
+  "fim": "2026-11-05T16:50:04.073+00:00",
+  "parametros": {
+    "url": "http://127.0.0.1:8088/manancial/historico?limite=20&ordem=desc",
+    "concorrencia": 16,
+    "duracao": 20.0,
+    "timeout": 5.0,
+    "aquecimento": 5.0,
+    "rampa": 0,
+    "degraus": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "metodo": "GET",
+    "servico": "manancial",
+    "corpo": null,
+    "saida": "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\base\\get-3\\carga"
+  },
+  "comando": [
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\carga\\loadgen.py",
+    "http://127.0.0.1:8088/manancial/historico?limite=20&ordem=desc",
+    "-c",
+    "16",
+    "-d",
+    "20",
+    "--aquecimento",
+    "5",
+    "--timeout",
+    "5",
+    "--metodo",
+    "GET",
+    "--saida",
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\base\\get-3\\carga",
+    "--degraus",
+    "1,2,4,8,16,32,64"
+  ],
+  "duracao_real_s": 140.7161460000002,
+  "criterio": "Latencias incluem falhas; aquecimento excluido somente dos resumos por degrau. Janela inclui conclusao das requisicoes iniciadas no degrau.",
+  "total": {
+    "requisicoes": 26415,
+    "sucessos": 26415,
+    "erros": 0,
+    "erros_pct": 0.0,
+    "vazao_ok_s": 187.71832181810097,
+    "p50_ms": 60.609499999827676,
+    "p95_ms": 304.76779999980863,
+    "p99_ms": 408.9613000001009,
+    "media_ms": 96.45988551201923,
+    "por_pod": {
+      "manancial-7c5dc897d-77rjz": 26415
+    },
+    "por_versao": {
+      "3.0.0": 26415
+    },
+    "por_status": {
+      "200": 26415
+    },
+    "por_erro": {}
+  },
+  "degraus": [
+    {
+      "degrau": 0,
+      "concorrencia": 1,
+      "segundos_medidos": 15.023356700000022,
+      "requisicoes": 1185,
+      "sucessos": 1185,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 78.87717929242793,
+      "p50_ms": 7.741899999928137,
+      "p95_ms": 30.0876999999673,
+      "p99_ms": 50.15610000009474,
+      "media_ms": 12.580947594939015,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 1185
+      },
+      "por_versao": {
+        "3.0.0": 1185
+      },
+      "por_status": {
+        "200": 1185
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 1,
+      "concorrencia": 2,
+      "segundos_medidos": 15.438473000000158,
+      "requisicoes": 2392,
+      "sucessos": 2392,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 154.9376029611203,
+      "p50_ms": 6.591200000002573,
+      "p95_ms": 29.564700000264565,
+      "p99_ms": 54.80839999972886,
+      "media_ms": 12.63522483277944,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 2392
+      },
+      "por_versao": {
+        "3.0.0": 2392
+      },
+      "por_status": {
+        "200": 2392
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 2,
+      "concorrencia": 4,
+      "segundos_medidos": 15.010451000000103,
+      "requisicoes": 3026,
+      "sucessos": 3026,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 201.59287685626364,
+      "p50_ms": 8.974399999715388,
+      "p95_ms": 64.43140000010317,
+      "p99_ms": 75.71619999998802,
+      "media_ms": 19.73591503635121,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 3026
+      },
+      "por_versao": {
+        "3.0.0": 3026
+      },
+      "por_status": {
+        "200": 3026
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 3,
+      "concorrencia": 8,
+      "segundos_medidos": 15.07682049999994,
+      "requisicoes": 2922,
+      "sucessos": 2922,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 193.80744103174882,
+      "p50_ms": 17.62460000009014,
+      "p95_ms": 93.52469999976165,
+      "p99_ms": 107.64340000014272,
+      "media_ms": 40.96458921971225,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 2922
+      },
+      "por_versao": {
+        "3.0.0": 2922
+      },
+      "por_status": {
+        "200": 2922
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 4,
+      "concorrencia": 16,
+      "segundos_medidos": 16.074202599999808,
+      "requisicoes": 3369,
+      "sucessos": 3369,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 209.59049004396897,
+      "p50_ms": 82.65449999998964,
+      "p95_ms": 108.37420000007114,
+      "p99_ms": 149.46310000004814,
+      "media_ms": 71.68064048678906,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 3369
+      },
+      "por_versao": {
+        "3.0.0": 3369
+      },
+      "por_status": {
+        "200": 3369
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 5,
+      "concorrencia": 32,
+      "segundos_medidos": 16.02825359999997,
+      "requisicoes": 3402,
+      "sucessos": 3402,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 212.2501979878835,
+      "p50_ms": 108.88210000030085,
+      "p95_ms": 223.6797000000479,
+      "p99_ms": 301.6308000001118,
+      "media_ms": 141.2800878012937,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 3402
+      },
+      "por_versao": {
+        "3.0.0": 3402
+      },
+      "por_status": {
+        "200": 3402
+      },
+      "por_erro": {}
+    },
+    {
+      "degrau": 6,
+      "concorrencia": 64,
+      "segundos_medidos": 15.646224099999927,
+      "requisicoes": 3378,
+      "sucessos": 3378,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 215.8987355933382,
+      "p50_ms": 289.3850999998904,
+      "p95_ms": 427.20269999972516,
+      "p99_ms": 552.6322000000619,
+      "media_ms": 284.50143975724933,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 3378
+      },
+      "por_versao": {
+        "3.0.0": 3378
+      },
+      "por_status": {
+        "200": 3378
+      },
+      "por_erro": {}
+    }
+  ]
+}

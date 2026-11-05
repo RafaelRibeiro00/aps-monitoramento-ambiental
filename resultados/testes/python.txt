@@ -1,0 +1,8 @@
+test_medicao_http_exportacao (carga.test_loadgen.GeradorTest.test_medicao_http_exportacao) ... ok
+test_percentis_e_erros (carga.test_loadgen.GeradorTest.test_percentis_e_erros) ... ok
+test_seguranca_e_sensores (carga.test_loadgen.GeradorTest.test_seguranca_e_sensores) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.099s
+
+OK

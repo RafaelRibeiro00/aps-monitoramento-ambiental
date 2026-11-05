@@ -1,0 +1,99 @@
+{
+  "inicio": "2026-11-05T17:08:14.636+00:00",
+  "fim": "2026-11-05T17:09:25.385+00:00",
+  "parametros": {
+    "url": "http://127.0.0.1:8088/manancial/leituras",
+    "concorrencia": 24,
+    "duracao": 70.0,
+    "timeout": 5.0,
+    "aquecimento": 5.0,
+    "rampa": 0,
+    "degraus": null,
+    "metodo": "POST",
+    "servico": "manancial",
+    "corpo": null,
+    "saida": "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\update\\undo\\carga"
+  },
+  "comando": [
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\carga\\loadgen.py",
+    "http://127.0.0.1:8088/manancial/leituras",
+    "-c",
+    "24",
+    "-d",
+    "70",
+    "--aquecimento",
+    "5",
+    "--timeout",
+    "5",
+    "--metodo",
+    "POST",
+    "--saida",
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\update\\undo\\carga"
+  ],
+  "duracao_real_s": 70.74767509999992,
+  "criterio": "Latencias incluem falhas; aquecimento excluido somente dos resumos por degrau. Janela inclui conclusao das requisicoes iniciadas no degrau.",
+  "total": {
+    "requisicoes": 4126,
+    "sucessos": 4112,
+    "erros": 14,
+    "erros_pct": 0.3393116820164809,
+    "vazao_ok_s": 58.1220304935878,
+    "p50_ms": 247.48700000009194,
+    "p95_ms": 1157.262400000036,
+    "p99_ms": 3229.5060000001286,
+    "media_ms": 408.2172452496397,
+    "por_pod": {
+      "manancial-fb84ddd7b-sbfdd": 1021,
+      "manancial-fb84ddd7b-b7gpw": 470,
+      "": 14,
+      "manancial-fb84ddd7b-ckj94": 1015,
+      "manancial-fb84ddd7b-9zfhr": 827,
+      "manancial-7c5dc897d-pxdwh": 575,
+      "manancial-7c5dc897d-hgqrv": 204
+    },
+    "por_versao": {
+      "3.0.1": 3333,
+      "": 14,
+      "3.0.0": 779
+    },
+    "por_status": {
+      "202": 4112,
+      "0": 14
+    },
+    "por_erro": {
+      "timeout": 14
+    }
+  },
+  "degraus": [
+    {
+      "degrau": 0,
+      "concorrencia": 24,
+      "segundos_medidos": 65.63025389999984,
+      "requisicoes": 4080,
+      "sucessos": 4080,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 62.16645156084044,
+      "p50_ms": 244.3900999996913,
+      "p95_ms": 1096.6239999997924,
+      "p99_ms": 2374.026999999842,
+      "media_ms": 376.0567746323558,
+      "por_pod": {
+        "manancial-fb84ddd7b-b7gpw": 458,
+        "manancial-fb84ddd7b-sbfdd": 1010,
+        "manancial-fb84ddd7b-ckj94": 1009,
+        "manancial-fb84ddd7b-9zfhr": 824,
+        "manancial-7c5dc897d-pxdwh": 575,
+        "manancial-7c5dc897d-hgqrv": 204
+      },
+      "por_versao": {
+        "3.0.1": 3301,
+        "3.0.0": 779
+      },
+      "por_status": {
+        "202": 4080
+      },
+      "por_erro": {}
+    }
+  ]
+}

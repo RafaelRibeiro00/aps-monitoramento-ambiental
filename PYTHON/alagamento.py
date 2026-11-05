@@ -8,7 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from configuracao import obter, url_api
 
-URL_API = url_api("ALAGAMENTO", 8082)
+URL_API = url_api("ALAGAMENTO", 9082)
 PONTO_ID = obter("ALAGAMENTO_PONTO_ID", "PONTO-001")
 INTERVALO_SEGUNDOS = 1.0
 SENSORES = {

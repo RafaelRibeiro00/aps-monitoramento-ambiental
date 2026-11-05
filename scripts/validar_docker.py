@@ -1,2 +1,5 @@
-"""Roteiro Docker anterior desativado durante a mudanca para SSE."""
-raise SystemExit("Nenhuma acao Docker executada. Use mvn test e os testes Python; a nova versao ainda nao foi empacotada em Docker.")
+"""Valida as tres imagens em containers temporarios, sem modificar o banco principal."""
+from validar_local import main
+
+if __name__ == "__main__":
+    main(docker=True)

@@ -1,0 +1,1 @@
+{"spec": {"template": {"spec": {"containers": [{"name": "api", "image": "aps-manancial:3.0.1", "env": [{"name": "APS_VERSAO", "value": "3.0.1"}]}]}}}}
