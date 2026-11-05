@@ -1,0 +1,1453 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "aps-lab"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "ingress",
+        "namespace": "aps-lab"
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "aps-ingress"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "services",
+            "endpoints",
+            "secrets",
+            "nodes"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "discovery.k8s.io"
+          ],
+          "resources": [
+            "endpointslices"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "ingresses",
+            "ingressclasses"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "ingresses/status"
+          ],
+          "verbs": [
+            "update"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "aps-ingress"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "aps-ingress"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "ingress",
+          "namespace": "aps-lab"
+        }
+      ]
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "IngressClass",
+      "metadata": {
+        "name": "aps"
+      },
+      "spec": {
+        "controller": "traefik.io/ingress-controller"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "ingress",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "ingress"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "ingress"
+            }
+          },
+          "spec": {
+            "serviceAccountName": "ingress",
+            "nodeSelector": {
+              "kubernetes.io/hostname": "aps-experimentos-control-plane"
+            },
+            "tolerations": [
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ],
+            "containers": [
+              {
+                "name": "ingress",
+                "image": "traefik:v3.5.0",
+                "args": [
+                  "--providers.kubernetesingress=true",
+                  "--providers.kubernetesingress.ingressclass=aps",
+                  "--entrypoints.web.address=:8080",
+                  "--entrypoints.web.transport.respondingtimeouts.writetimeout=0",
+                  "--accesslog=true"
+                ],
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "48Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "160Mi"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "ingress",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "NodePort",
+        "selector": {
+          "app": "ingress"
+        },
+        "ports": [
+          {
+            "port": 8080,
+            "targetPort": 8080,
+            "nodePort": 30080
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolume",
+      "metadata": {
+        "name": "manancial-estado"
+      },
+      "spec": {
+        "capacity": {
+          "storage": "1Gi"
+        },
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "",
+        "hostPath": {
+          "path": "/var/local/aps-lab/manancial",
+          "type": "DirectoryOrCreate"
+        },
+        "nodeAffinity": {
+          "required": {
+            "nodeSelectorTerms": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "aps-experimentos-control-plane"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "manancial-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "",
+        "volumeName": "manancial-estado",
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "manancial-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "serviceName": "manancial-estado",
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "manancial-estado"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "manancial-estado",
+              "camada": "estado"
+            }
+          },
+          "spec": {
+            "nodeSelector": {
+              "kubernetes.io/hostname": "aps-experimentos-control-plane"
+            },
+            "tolerations": [
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ],
+            "terminationGracePeriodSeconds": 40,
+            "securityContext": {
+              "fsGroup": 10001
+            },
+            "initContainers": [
+              {
+                "name": "permissoes",
+                "image": "busybox:1.37",
+                "command": [
+                  "sh",
+                  "-c",
+                  "chown 10001:10001 /dados"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/dados"
+                  }
+                ]
+              }
+            ],
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-manancial:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8081
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8081"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_DB",
+                    "value": "/app/dados/aps.db"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8081
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8081
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8081
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "96Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/app/dados"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "dados",
+                "persistentVolumeClaim": {
+                  "claimName": "manancial-estado"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "manancial-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "manancial-estado"
+        },
+        "ports": [
+          {
+            "port": 8081,
+            "targetPort": 8081
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "manancial",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 5,
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxSurge": 1,
+            "maxUnavailable": 0
+          }
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "manancial"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "manancial",
+              "camada": "atendimento"
+            }
+          },
+          "spec": {
+            "terminationGracePeriodSeconds": 30,
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-manancial:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8081
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8081"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_COORDENADOR",
+                    "value": "http://manancial-estado:8081"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8081
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8081
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8081
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "80Mi"
+                  },
+                  "limits": {
+                    "cpu": "250m",
+                    "memory": "160Mi"
+                  }
+                },
+                "lifecycle": {
+                  "preStop": {
+                    "exec": {
+                      "command": [
+                        "sh",
+                        "-c",
+                        "sleep 5"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "topologySpreadConstraints": [
+              {
+                "maxSkew": 1,
+                "topologyKey": "kubernetes.io/hostname",
+                "whenUnsatisfiable": "ScheduleAnyway",
+                "labelSelector": {
+                  "matchLabels": {
+                    "app": "manancial"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "manancial",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "manancial"
+        },
+        "ports": [
+          {
+            "port": 8081,
+            "targetPort": 8081
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "name": "manancial",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "manancial"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolume",
+      "metadata": {
+        "name": "alagamento-estado"
+      },
+      "spec": {
+        "capacity": {
+          "storage": "1Gi"
+        },
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "",
+        "hostPath": {
+          "path": "/var/local/aps-lab/alagamento",
+          "type": "DirectoryOrCreate"
+        },
+        "nodeAffinity": {
+          "required": {
+            "nodeSelectorTerms": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "aps-experimentos-control-plane"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "alagamento-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "",
+        "volumeName": "alagamento-estado",
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "alagamento-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "serviceName": "alagamento-estado",
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "alagamento-estado"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "alagamento-estado",
+              "camada": "estado"
+            }
+          },
+          "spec": {
+            "nodeSelector": {
+              "kubernetes.io/hostname": "aps-experimentos-control-plane"
+            },
+            "tolerations": [
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ],
+            "terminationGracePeriodSeconds": 40,
+            "securityContext": {
+              "fsGroup": 10001
+            },
+            "initContainers": [
+              {
+                "name": "permissoes",
+                "image": "busybox:1.37",
+                "command": [
+                  "sh",
+                  "-c",
+                  "chown 10001:10001 /dados"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/dados"
+                  }
+                ]
+              }
+            ],
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-alagamento:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8082
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8082"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_DB",
+                    "value": "/app/dados/aps.db"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8082
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8082
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8082
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "96Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/app/dados"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "dados",
+                "persistentVolumeClaim": {
+                  "claimName": "alagamento-estado"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "alagamento-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "alagamento-estado"
+        },
+        "ports": [
+          {
+            "port": 8082,
+            "targetPort": 8082
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "alagamento",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 5,
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxSurge": 1,
+            "maxUnavailable": 0
+          }
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "alagamento"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "alagamento",
+              "camada": "atendimento"
+            }
+          },
+          "spec": {
+            "terminationGracePeriodSeconds": 30,
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-alagamento:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8082
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8082"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_COORDENADOR",
+                    "value": "http://alagamento-estado:8082"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8082
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8082
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8082
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "80Mi"
+                  },
+                  "limits": {
+                    "cpu": "250m",
+                    "memory": "160Mi"
+                  }
+                },
+                "lifecycle": {
+                  "preStop": {
+                    "exec": {
+                      "command": [
+                        "sh",
+                        "-c",
+                        "sleep 5"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "topologySpreadConstraints": [
+              {
+                "maxSkew": 1,
+                "topologyKey": "kubernetes.io/hostname",
+                "whenUnsatisfiable": "ScheduleAnyway",
+                "labelSelector": {
+                  "matchLabels": {
+                    "app": "alagamento"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "alagamento",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "alagamento"
+        },
+        "ports": [
+          {
+            "port": 8082,
+            "targetPort": 8082
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "name": "alagamento",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "alagamento"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolume",
+      "metadata": {
+        "name": "inversao-termica-estado"
+      },
+      "spec": {
+        "capacity": {
+          "storage": "1Gi"
+        },
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "persistentVolumeReclaimPolicy": "Retain",
+        "storageClassName": "",
+        "hostPath": {
+          "path": "/var/local/aps-lab/inversao-termica",
+          "type": "DirectoryOrCreate"
+        },
+        "nodeAffinity": {
+          "required": {
+            "nodeSelectorTerms": [
+              {
+                "matchExpressions": [
+                  {
+                    "key": "kubernetes.io/hostname",
+                    "operator": "In",
+                    "values": [
+                      "aps-experimentos-control-plane"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "inversao-termica-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "storageClassName": "",
+        "volumeName": "inversao-termica-estado",
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "inversao-termica-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "serviceName": "inversao-termica-estado",
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "inversao-termica-estado"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "inversao-termica-estado",
+              "camada": "estado"
+            }
+          },
+          "spec": {
+            "nodeSelector": {
+              "kubernetes.io/hostname": "aps-experimentos-control-plane"
+            },
+            "tolerations": [
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ],
+            "terminationGracePeriodSeconds": 40,
+            "securityContext": {
+              "fsGroup": 10001
+            },
+            "initContainers": [
+              {
+                "name": "permissoes",
+                "image": "busybox:1.37",
+                "command": [
+                  "sh",
+                  "-c",
+                  "chown 10001:10001 /dados"
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/dados"
+                  }
+                ]
+              }
+            ],
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-inversao-termica:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8083
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8083"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_DB",
+                    "value": "/app/dados/aps.db"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8083
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8083
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8083
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "96Mi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "256Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "dados",
+                    "mountPath": "/app/dados"
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "dados",
+                "persistentVolumeClaim": {
+                  "claimName": "inversao-termica-estado"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "inversao-termica-estado",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "inversao-termica-estado"
+        },
+        "ports": [
+          {
+            "port": 8083,
+            "targetPort": 8083
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "inversao-termica",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "replicas": 1,
+        "revisionHistoryLimit": 5,
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxSurge": 1,
+            "maxUnavailable": 0
+          }
+        },
+        "selector": {
+          "matchLabels": {
+            "app": "inversao-termica"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "inversao-termica",
+              "camada": "atendimento"
+            }
+          },
+          "spec": {
+            "terminationGracePeriodSeconds": 30,
+            "containers": [
+              {
+                "name": "api",
+                "image": "aps-inversao-termica:3.0.0",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8083
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "APS_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "APS_PORT",
+                    "value": "8083"
+                  },
+                  {
+                    "name": "APS_VERSAO",
+                    "value": "3.0.0"
+                  },
+                  {
+                    "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2"
+                  },
+                  {
+                    "name": "APS_COORDENADOR",
+                    "value": "http://inversao-termica-estado:8083"
+                  }
+                ],
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/health/ready",
+                    "port": 8083
+                  },
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2,
+                  "failureThreshold": 3
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8083
+                  },
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 3,
+                  "failureThreshold": 6
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/health/live",
+                    "port": 8083
+                  },
+                  "periodSeconds": 3,
+                  "failureThreshold": 40
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "80Mi"
+                  },
+                  "limits": {
+                    "cpu": "250m",
+                    "memory": "160Mi"
+                  }
+                },
+                "lifecycle": {
+                  "preStop": {
+                    "exec": {
+                      "command": [
+                        "sh",
+                        "-c",
+                        "sleep 5"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "topologySpreadConstraints": [
+              {
+                "maxSkew": 1,
+                "topologyKey": "kubernetes.io/hostname",
+                "whenUnsatisfiable": "ScheduleAnyway",
+                "labelSelector": {
+                  "matchLabels": {
+                    "app": "inversao-termica"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "inversao-termica",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "inversao-termica"
+        },
+        "ports": [
+          {
+            "port": 8083,
+            "targetPort": 8083
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "policy/v1",
+      "kind": "PodDisruptionBudget",
+      "metadata": {
+        "name": "inversao-termica",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "minAvailable": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "inversao-termica"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "Ingress",
+      "metadata": {
+        "name": "apis",
+        "namespace": "aps-lab"
+      },
+      "spec": {
+        "ingressClassName": "aps",
+        "rules": [
+          {
+            "http": {
+              "paths": [
+                {
+                  "path": "/manancial",
+                  "pathType": "Prefix",
+                  "backend": {
+                    "service": {
+                      "name": "manancial",
+                      "port": {
+                        "number": 8081
+                      }
+                    }
+                  }
+                },
+                {
+                  "path": "/alagamento",
+                  "pathType": "Prefix",
+                  "backend": {
+                    "service": {
+                      "name": "alagamento",
+                      "port": {
+                        "number": 8082
+                      }
+                    }
+                  }
+                },
+                {
+                  "path": "/inversao-termica",
+                  "pathType": "Prefix",
+                  "backend": {
+                    "service": {
+                      "name": "inversao-termica",
+                      "port": {
+                        "number": 8083
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

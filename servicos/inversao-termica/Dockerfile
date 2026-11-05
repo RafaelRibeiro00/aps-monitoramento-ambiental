@@ -1,5 +1,5 @@
 # Execute na raiz da APS:
-# docker build -t aps-inversao-termica:1.2.0 ./servicos/inversao-termica
+# docker build -t aps-inversao-termica:2.0.0 ./servicos/inversao-termica
 
 # Compila, executa os testes e separa as dependencias de execucao.
 FROM maven:3.9.16-eclipse-temurin-17 AS build
@@ -29,6 +29,8 @@ COPY --from=build /build/dependencias/ /app/lib/
 
 ENV APS_HOST=0.0.0.0 APS_PORT=8083 APS_DB=/app/dados/aps.db
 
+ARG APS_BUILD_VERSION=3.0.0
+ENV APS_VERSAO=${APS_BUILD_VERSION}
 USER 10001:10001
 EXPOSE 8083
 

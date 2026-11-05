@@ -1,222 +1,308 @@
 {
   "info": {
-    "name": "APS - Leituras, consultas e alertas",
-    "description": "APIs Docker nas portas 8081, 8082 e 8083. POST recebe leituras e gera alertas automaticamente; GET consulta leituras e alertas com filtros opcionais. Limites de alerta didaticos configuraveis no .env.",
+    "name": "APS - Sensores, historico, SSE e alertas",
+    "description": "Execucao Java local. POST aceita dados com HTTP 202 e persistencia pendente. Alagamento agrupa sensores em ate 3 segundos. SSE transmite sem esperar SQLite. Alertas recentes duram 60 segundos.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Manancial",
-      "request": {
-        "method": "POST",
-        "auth": {
-          "type": "noauth"
-        },
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"area\": \"AREA-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"percentual_ocupado\": 35.5,\r\n  \"nivel_agua_m\": 12.3,\r\n  \"temperatura_agua_c\": 22.5\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": "http://127.0.0.1:8081/leituras"
-      },
-      "response": []
-    },
-    {
-      "name": "Alagamento",
-      "request": {
-        "method": "POST",
-        "auth": {
-          "type": "noauth"
-        },
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"sensor\": \"SENSOR-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"nivel_corrego_cm\": 120,\r\n  \"chuva_mm\": 15.2,\r\n  \"velocidade_agua_m_s\": 1.5\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": "http://127.0.0.1:8082/leituras"
-      },
-      "response": []
-    },
-    {
-      "name": "Inversao Termica",
-      "request": {
-        "method": "POST",
-        "auth": {
-          "type": "noauth"
-        },
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"estacao\": \"ESTACAO-001\",\r\n  \"timestamp\": \"2026-09-04T21:30:00-03:00\",\r\n  \"umidade\": 68.5,\r\n  \"temperatura_c\": 24.5,\r\n  \"vento_km_h\": 8.2\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": "http://127.0.0.1:8083/leituras"
-      },
-      "response": []
-    },
-    {
-      "name": "Manancial - consultas e alertas",
+      "name": "manancial",
       "item": [
         {
-          "name": "Todas as leituras",
+          "name": "Enviar leitura",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "http://127.0.0.1:8081/leituras"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:8081/manancial/leituras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"area\": \"AREA-001\",\n  \"timestamp\": \"2026-09-25T12:00:00Z\",\n  \"percentual_ocupado\": 15,\n  \"nivel_agua_m\": 5,\n  \"temperatura_agua_c\": 22\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         },
         {
-          "name": "Filtrar por sensor, data e medida",
+          "name": "Consultar historico",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8081/leituras?sensor=AREA-001&data=2026-09-18&nivel_agua_m_min=10"
+            "url": "http://localhost:8081/manancial/historico"
           }
         },
         {
-          "name": "Proxima pagina",
+          "name": "Historico com filtros",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8081/leituras?limite=100&offset=100"
+            "url": "http://localhost:8081/manancial/historico?data=2026-09-25&limite=100&offset=0"
           }
         },
         {
-          "name": "Alertas",
+          "name": "Leituras ao vivo (SSE)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8081/alertas"
+            "url": "http://localhost:8081/manancial/tempo-real"
           }
         },
         {
-          "name": "Alertas pendentes",
+          "name": "Alertas recentes (60 segundos)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8081/alertas?status_notificacao=pendente"
+            "url": "http://localhost:8081/manancial/alertas"
+          }
+        },
+        {
+          "name": "Historico de alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8081/manancial/alertas-historico"
+          }
+        },
+        {
+          "name": "Ultimo alerta salvo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8081/manancial/alertas-historico?limite=1&ordem=desc"
           }
         }
       ]
     },
     {
-      "name": "Alagamento - consultas e alertas",
+      "name": "alagamento",
       "item": [
         {
-          "name": "Todas as leituras",
+          "name": "nivel_corrego",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:8082/alagamento/leituras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensor_id\": \"NIVEL-001\",\n  \"ponto_id\": \"PONTO-001\",\n  \"tipo\": \"nivel_corrego\",\n  \"valor\": 210,\n  \"unidade\": \"cm\",\n  \"timestamp\": \"{{instante_sensor}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"instante_sensor\", new Date().toISOString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "chuva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:8082/alagamento/leituras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensor_id\": \"CHUVA-001\",\n  \"ponto_id\": \"PONTO-001\",\n  \"tipo\": \"chuva\",\n  \"valor\": 25,\n  \"unidade\": \"mm\",\n  \"timestamp\": \"{{instante_sensor}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"instante_sensor\", new Date().toISOString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "velocidade_agua",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:8082/alagamento/leituras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensor_id\": \"VELOCIDADE-001\",\n  \"ponto_id\": \"PONTO-001\",\n  \"tipo\": \"velocidade_agua\",\n  \"valor\": 2,\n  \"unidade\": \"m/s\",\n  \"timestamp\": \"{{instante_sensor}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"instante_sensor\", new Date().toISOString());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar historico",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8082/leituras"
+            "url": "http://localhost:8082/alagamento/historico"
           }
         },
         {
-          "name": "Filtrar por sensor, data e medida",
+          "name": "Historico com filtros",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8082/leituras?sensor=SENSOR-001&data=2026-09-18&nivel_corrego_cm_min=10"
+            "url": "http://localhost:8082/alagamento/historico?data=2026-09-25&limite=100&offset=0"
           }
         },
         {
-          "name": "Proxima pagina",
+          "name": "Leituras ao vivo (SSE)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8082/leituras?limite=100&offset=100"
+            "url": "http://localhost:8082/alagamento/tempo-real"
           }
         },
         {
-          "name": "Alertas",
+          "name": "Alertas recentes (60 segundos)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8082/alertas"
+            "url": "http://localhost:8082/alagamento/alertas"
           }
         },
         {
-          "name": "Alertas pendentes",
+          "name": "Historico de alertas",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8082/alertas?status_notificacao=pendente"
+            "url": "http://localhost:8082/alagamento/alertas-historico"
+          }
+        },
+        {
+          "name": "Ultimo alerta salvo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8082/alagamento/alertas-historico?limite=1&ordem=desc"
           }
         }
       ]
     },
     {
-      "name": "Inversao termica - consultas e alertas",
+      "name": "inversao-termica",
       "item": [
         {
-          "name": "Todas as leituras",
+          "name": "Enviar leitura",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": "http://127.0.0.1:8083/leituras"
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:8083/inversao-termica/leituras",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estacao\": \"ESTACAO-001\",\n  \"timestamp\": \"2026-09-25T12:00:00Z\",\n  \"umidade\": 20,\n  \"temperatura_c\": 32,\n  \"vento_km_h\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         },
         {
-          "name": "Filtrar por sensor, data e medida",
+          "name": "Consultar historico",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8083/leituras?sensor=ESTACAO-001&data=2026-09-18&temperatura_c_min=10"
+            "url": "http://localhost:8083/inversao-termica/historico"
           }
         },
         {
-          "name": "Proxima pagina",
+          "name": "Historico com filtros",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8083/leituras?limite=100&offset=100"
+            "url": "http://localhost:8083/inversao-termica/historico?data=2026-09-25&limite=100&offset=0"
           }
         },
         {
-          "name": "Alertas",
+          "name": "Leituras ao vivo (SSE)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8083/alertas"
+            "url": "http://localhost:8083/inversao-termica/tempo-real"
           }
         },
         {
-          "name": "Alertas pendentes",
+          "name": "Alertas recentes (60 segundos)",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://127.0.0.1:8083/alertas?status_notificacao=pendente"
+            "url": "http://localhost:8083/inversao-termica/alertas"
+          }
+        },
+        {
+          "name": "Historico de alertas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8083/inversao-termica/alertas-historico"
+          }
+        },
+        {
+          "name": "Ultimo alerta salvo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8083/inversao-termica/alertas-historico?limite=1&ordem=desc"
           }
         }
       ]

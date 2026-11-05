@@ -1,0 +1,90 @@
+{
+  "inicio": "2026-11-05T17:02:04.302+00:00",
+  "fim": "2026-11-05T17:03:04.642+00:00",
+  "parametros": {
+    "url": "http://127.0.0.1:8088/manancial/leituras",
+    "concorrencia": 24,
+    "duracao": 60.0,
+    "timeout": 5.0,
+    "aquecimento": 5.0,
+    "rampa": 0,
+    "degraus": null,
+    "metodo": "POST",
+    "servico": "manancial",
+    "corpo": null,
+    "saida": "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\falhas\\pod\\carga"
+  },
+  "comando": [
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\carga\\loadgen.py",
+    "http://127.0.0.1:8088/manancial/leituras",
+    "-c",
+    "24",
+    "-d",
+    "60",
+    "--aquecimento",
+    "5",
+    "--timeout",
+    "5",
+    "--metodo",
+    "POST",
+    "--saida",
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\falhas\\pod\\carga"
+  ],
+  "duracao_real_s": 60.33664480000016,
+  "criterio": "Latencias incluem falhas; aquecimento excluido somente dos resumos por degrau. Janela inclui conclusao das requisicoes iniciadas no degrau.",
+  "total": {
+    "requisicoes": 4825,
+    "sucessos": 4825,
+    "erros": 0,
+    "erros_pct": 0.0,
+    "vazao_ok_s": 79.9679738291886,
+    "p50_ms": 179.90710000003673,
+    "p95_ms": 943.4110000001965,
+    "p99_ms": 1651.7942000000403,
+    "media_ms": 298.8021084145089,
+    "por_pod": {
+      "manancial-7c5dc897d-t46cq": 1303,
+      "manancial-7c5dc897d-x988v": 1305,
+      "manancial-7c5dc897d-6pgrh": 143,
+      "manancial-7c5dc897d-95s4q": 1304,
+      "manancial-7c5dc897d-7zdcc": 770
+    },
+    "por_versao": {
+      "3.0.0": 4825
+    },
+    "por_status": {
+      "202": 4825
+    },
+    "por_erro": {}
+  },
+  "degraus": [
+    {
+      "degrau": 0,
+      "concorrencia": 24,
+      "segundos_medidos": 55.28683050000018,
+      "requisicoes": 4619,
+      "sucessos": 4619,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 83.54611682794848,
+      "p50_ms": 177.57440000013958,
+      "p95_ms": 896.6406999998071,
+      "p99_ms": 1402.839600000334,
+      "media_ms": 281.8187154578934,
+      "por_pod": {
+        "manancial-7c5dc897d-x988v": 1249,
+        "manancial-7c5dc897d-t46cq": 1248,
+        "manancial-7c5dc897d-95s4q": 1248,
+        "manancial-7c5dc897d-6pgrh": 104,
+        "manancial-7c5dc897d-7zdcc": 770
+      },
+      "por_versao": {
+        "3.0.0": 4619
+      },
+      "por_status": {
+        "202": 4619
+      },
+      "por_erro": {}
+    }
+  ]
+}

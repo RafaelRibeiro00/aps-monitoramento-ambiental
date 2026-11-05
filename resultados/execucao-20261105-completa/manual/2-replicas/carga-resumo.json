@@ -1,0 +1,84 @@
+{
+  "inicio": "2026-11-05T16:51:12.189+00:00",
+  "fim": "2026-11-05T16:51:47.522+00:00",
+  "parametros": {
+    "url": "http://127.0.0.1:8088/manancial/leituras",
+    "concorrencia": 32,
+    "duracao": 35.0,
+    "timeout": 5.0,
+    "aquecimento": 5.0,
+    "rampa": 0,
+    "degraus": null,
+    "metodo": "POST",
+    "servico": "manancial",
+    "corpo": null,
+    "saida": "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\manual\\2-replicas\\carga"
+  },
+  "comando": [
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\carga\\loadgen.py",
+    "http://127.0.0.1:8088/manancial/leituras",
+    "-c",
+    "32",
+    "-d",
+    "35",
+    "--aquecimento",
+    "5",
+    "--timeout",
+    "5",
+    "--metodo",
+    "POST",
+    "--saida",
+    "G:\\Meu Drive\\PESSOAL\\FACULDADE\\8 semestre\\APS\\resultados\\execucao-20261105-completa\\manual\\2-replicas\\carga"
+  ],
+  "duracao_real_s": 35.330364400000235,
+  "criterio": "Latencias incluem falhas; aquecimento excluido somente dos resumos por degrau. Janela inclui conclusao das requisicoes iniciadas no degrau.",
+  "total": {
+    "requisicoes": 3361,
+    "sucessos": 3361,
+    "erros": 0,
+    "erros_pct": 0.0,
+    "vazao_ok_s": 95.13061210854094,
+    "p50_ms": 202.0633000001908,
+    "p95_ms": 919.63399999986,
+    "p99_ms": 1739.3849000000046,
+    "media_ms": 334.5006912823585,
+    "por_pod": {
+      "manancial-7c5dc897d-77rjz": 2001,
+      "manancial-7c5dc897d-mvgdf": 1360
+    },
+    "por_versao": {
+      "3.0.0": 3361
+    },
+    "por_status": {
+      "202": 3361
+    },
+    "por_erro": {}
+  },
+  "degraus": [
+    {
+      "degrau": 0,
+      "concorrencia": 32,
+      "segundos_medidos": 30.29498599999988,
+      "requisicoes": 2752,
+      "sucessos": 2752,
+      "erros": 0,
+      "erros_pct": 0.0,
+      "vazao_ok_s": 90.8401145985019,
+      "p50_ms": 232.2903000003862,
+      "p95_ms": 919.63399999986,
+      "p99_ms": 2669.55710000002,
+      "media_ms": 349.5229948764574,
+      "por_pod": {
+        "manancial-7c5dc897d-77rjz": 1392,
+        "manancial-7c5dc897d-mvgdf": 1360
+      },
+      "por_versao": {
+        "3.0.0": 2752
+      },
+      "por_status": {
+        "202": 2752
+      },
+      "por_erro": {}
+    }
+  ]
+}

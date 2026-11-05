@@ -2,7 +2,7 @@ name: aps-ambiental
 
 services:
   manancial:
-    image: aps-manancial:${APS_IMAGE_TAG:-1.2.0}
+    image: aps-manancial:${APS_IMAGE_TAG:-2.0.0}
     build:
       context: ./servicos/manancial
     container_name: cont-manancial
@@ -10,6 +10,7 @@ services:
     init: true
     environment:
       APS_HOST: 0.0.0.0
+      APS_CORS_ORIGINS: ${APS_CORS_ORIGINS:-}
       APS_PORT: "8081"
       ALERTA_WEBHOOK_URL: ${MANANCIAL_WEBHOOK_URL:-}
       ALERTA_WEBHOOK_TOKEN: ${MANANCIAL_WEBHOOK_TOKEN:-}
@@ -31,7 +32,7 @@ services:
       start_period: 15s
 
   alagamento:
-    image: aps-alagamento:${APS_IMAGE_TAG:-1.2.0}
+    image: aps-alagamento:${APS_IMAGE_TAG:-2.0.0}
     build:
       context: ./servicos/alagamento
     container_name: cont-alagamento
@@ -39,6 +40,7 @@ services:
     init: true
     environment:
       APS_HOST: 0.0.0.0
+      APS_CORS_ORIGINS: ${APS_CORS_ORIGINS:-}
       APS_PORT: "8082"
       ALERTA_WEBHOOK_URL: ${ALAGAMENTO_WEBHOOK_URL:-}
       ALERTA_WEBHOOK_TOKEN: ${ALAGAMENTO_WEBHOOK_TOKEN:-}
@@ -61,7 +63,7 @@ services:
       start_period: 15s
 
   inversao-termica:
-    image: aps-inversao-termica:${APS_IMAGE_TAG:-1.2.0}
+    image: aps-inversao-termica:${APS_IMAGE_TAG:-2.0.0}
     build:
       context: ./servicos/inversao-termica
     container_name: cont-inversao-termica
@@ -69,6 +71,7 @@ services:
     init: true
     environment:
       APS_HOST: 0.0.0.0
+      APS_CORS_ORIGINS: ${APS_CORS_ORIGINS:-}
       APS_PORT: "8083"
       ALERTA_WEBHOOK_URL: ${INVERSAO_TERMICA_WEBHOOK_URL:-}
       ALERTA_WEBHOOK_TOKEN: ${INVERSAO_TERMICA_WEBHOOK_TOKEN:-}

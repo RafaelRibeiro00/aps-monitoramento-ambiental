@@ -26,3 +26,11 @@ __pycache__/
 # Arquivos locais do Windows e filas duraveis
 desktop.ini
 *.fila-*/
+
+# Resultados brutos são preservados localmente e versionados no arquivo tar.gz.
+# Resumos JSON, relatórios, gráficos e o arquivo compactado continuam rastreáveis.
+resultados/**/carga-requisicoes.csv
+resultados/**/carga-segundos.csv
+resultados/**/eventos.jsonl
+resultados/**/console.txt
+resultados/**/ambiente.txt
