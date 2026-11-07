@@ -37,3 +37,6 @@ resultados/**/carga-segundos.csv
 resultados/**/eventos.jsonl
 resultados/**/console.txt
 resultados/**/ambiente.txt
+
+# Artefatos temporários usados para renderizar e revisar documentos Word.
+/tmp-documentacao-k3d/
