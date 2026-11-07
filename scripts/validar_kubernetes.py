@@ -58,7 +58,7 @@ def main():
                     'evento_id':event['evento_id'],'headers':posts[0][1]}
             finally: response.close()
     # Uma cópia diferente precisa acessar a mesma leitura, depois de escalar o atendimento.
-    context=['kubectl','--context','kind-aps-experimentos','-n','aps-lab']
+    context=['kubectl','--context','k3d-aps','-n','aps']
     subprocess.run(context+['scale','deployment/manancial','--replicas=2'],check=True)
     subprocess.run(context+['rollout','status','deployment/manancial','--timeout=120s'],check=True)
     pods=set()

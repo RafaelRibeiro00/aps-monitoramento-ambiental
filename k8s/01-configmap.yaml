@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aps-config
+  namespace: aps
+data:
+  APS_HOST: "0.0.0.0"
+  APS_CORS_ORIGINS: ""
+  APS_ESCRITA: "assincrona"
+  ALERTA_PERCENTUAL_BAIXO: "20"
+  ALERTA_NIVEL_CORREGO_CM: "200"
+  ALERTA_CHUVA_MM: "50"
+  ALERTA_TEMPERATURA_C: "30"
+  ALERTA_UMIDADE_MAX: "30"
+  ALERTA_VENTO_MAX_KM_H: "5"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"

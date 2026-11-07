@@ -1,0 +1,266 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manancial
+  namespace: aps
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: { app: manancial }
+  template:
+    metadata:
+      labels: { app: manancial, camada: atendimento }
+    spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values: [k3d-aps-server-0]
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: manancial }
+      containers:
+        - name: api
+          image: aps-manancial:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: aps-config }
+            - secretRef: { name: aps-segredos }
+          env:
+            - { name: APS_PORT, value: "8081" }
+            - { name: APS_COORDENADOR, value: "http://manancial-estado:8081" }
+            - { name: APS_VERSAO, value: "3.0.0" }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2" }
+          ports:
+            - { containerPort: 8081 }
+          startupProbe:
+            httpGet: { path: /health/live, port: 8081 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8081 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8081 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          resources:
+            requests: { cpu: 100m, memory: 80Mi }
+            limits: { cpu: 250m, memory: 160Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: manancial
+  namespace: aps
+spec:
+  selector: { app: manancial }
+  ports:
+    - { name: http, port: 8081, targetPort: 8081 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: manancial
+  namespace: aps
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: manancial }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alagamento
+  namespace: aps
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: { app: alagamento }
+  template:
+    metadata:
+      labels: { app: alagamento, camada: atendimento }
+    spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - { key: kubernetes.io/hostname, operator: NotIn, values: [k3d-aps-server-0] }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: alagamento }
+      containers:
+        - name: api
+          image: aps-alagamento:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: aps-config }
+            - secretRef: { name: aps-segredos }
+          env:
+            - { name: APS_PORT, value: "8082" }
+            - { name: APS_COORDENADOR, value: "http://alagamento-estado:8082" }
+            - { name: APS_VERSAO, value: "3.0.0" }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2" }
+          ports: [{ containerPort: 8082 }]
+          startupProbe:
+            httpGet: { path: /health/live, port: 8082 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8082 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8082 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          resources:
+            requests: { cpu: 100m, memory: 80Mi }
+            limits: { cpu: 250m, memory: 160Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alagamento
+  namespace: aps
+spec:
+  selector: { app: alagamento }
+  ports:
+    - { name: http, port: 8082, targetPort: 8082 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: alagamento
+  namespace: aps
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: alagamento }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inversao-termica
+  namespace: aps
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: { app: inversao-termica }
+  template:
+    metadata:
+      labels: { app: inversao-termica, camada: atendimento }
+    spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - { key: kubernetes.io/hostname, operator: NotIn, values: [k3d-aps-server-0] }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: inversao-termica }
+      containers:
+        - name: api
+          image: aps-inversao-termica:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: aps-config }
+            - secretRef: { name: aps-segredos }
+          env:
+            - { name: APS_PORT, value: "8083" }
+            - { name: APS_COORDENADOR, value: "http://inversao-termica-estado:8083" }
+            - { name: APS_VERSAO, value: "3.0.0" }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xms16m -Xmx64m -Xss256k -XX:ActiveProcessorCount=2" }
+          ports: [{ containerPort: 8083 }]
+          startupProbe:
+            httpGet: { path: /health/live, port: 8083 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8083 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8083 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
+          resources:
+            requests: { cpu: 100m, memory: 80Mi }
+            limits: { cpu: 250m, memory: 160Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inversao-termica
+  namespace: aps
+spec:
+  selector: { app: inversao-termica }
+  ports:
+    - { name: http, port: 8083, targetPort: 8083 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: inversao-termica
+  namespace: aps
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: inversao-termica }

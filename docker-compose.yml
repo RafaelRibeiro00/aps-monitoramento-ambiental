@@ -2,10 +2,10 @@ name: aps-ambiental
 
 services:
   manancial:
-    image: aps-manancial:${APS_IMAGE_TAG:-2.0.0}
+    image: aps-manancial:${APS_IMAGE_TAG:-3.0.0}
     build:
       context: ./servicos/manancial
-    container_name: cont-manancial
+    container_name: aps-manancial-api
     restart: unless-stopped
     init: true
     environment:
@@ -32,10 +32,10 @@ services:
       start_period: 15s
 
   alagamento:
-    image: aps-alagamento:${APS_IMAGE_TAG:-2.0.0}
+    image: aps-alagamento:${APS_IMAGE_TAG:-3.0.0}
     build:
       context: ./servicos/alagamento
-    container_name: cont-alagamento
+    container_name: aps-alagamento-api
     restart: unless-stopped
     init: true
     environment:
@@ -63,10 +63,10 @@ services:
       start_period: 15s
 
   inversao-termica:
-    image: aps-inversao-termica:${APS_IMAGE_TAG:-2.0.0}
+    image: aps-inversao-termica:${APS_IMAGE_TAG:-3.0.0}
     build:
       context: ./servicos/inversao-termica
-    container_name: cont-inversao-termica
+    container_name: aps-inversao-termica-api
     restart: unless-stopped
     init: true
     environment:

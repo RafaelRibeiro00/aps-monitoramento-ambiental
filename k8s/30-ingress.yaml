@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  namespace: aps
+spec:
+  ingressClassName: traefik
+  rules:
+    - http:
+        paths:
+          - path: /manancial
+            pathType: Prefix
+            backend:
+              service:
+                name: manancial
+                port: { number: 8081 }
+          - path: /alagamento
+            pathType: Prefix
+            backend:
+              service:
+                name: alagamento
+                port: { number: 8082 }
+          - path: /inversao-termica
+            pathType: Prefix
+            backend:
+              service:
+                name: inversao-termica
+                port: { number: 8083 }

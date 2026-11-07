@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="880" viewBox="0 0 1400 880">
+  <defs>
+    <style>
+      .title{font:700 30px Arial;fill:#14213d}.head{font:700 20px Arial;fill:#fff}.txt{font:16px Arial;fill:#14213d}.small{font:14px Arial;fill:#14213d}.node{fill:#eef4ff;stroke:#2563eb;stroke-width:3}.state{fill:#fff7df;stroke:#d97706;stroke-width:2}.api{fill:#ecfdf5;stroke:#059669;stroke-width:2}.infra{fill:#f5f3ff;stroke:#7c3aed;stroke-width:2}.arrow{stroke:#334155;stroke-width:3;fill:none;marker-end:url(#m)}
+    </style>
+    <marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#334155"/></marker>
+  </defs>
+  <rect width="1400" height="880" fill="#fff"/>
+  <text x="700" y="45" text-anchor="middle" class="title">APS — Cluster k3d/k3s</text>
+  <rect x="40" y="85" width="180" height="70" rx="12" class="infra"/><text x="130" y="115" text-anchor="middle" class="txt">Cliente</text><text x="130" y="139" text-anchor="middle" class="small">localhost:8088</text>
+  <rect x="280" y="85" width="220" height="70" rx="12" class="infra"/><text x="390" y="115" text-anchor="middle" class="txt">k3d serverlb</text><text x="390" y="139" text-anchor="middle" class="small">porta 8088 → 80</text>
+  <rect x="560" y="85" width="220" height="70" rx="12" class="infra"/><text x="670" y="115" text-anchor="middle" class="txt">Traefik / Ingress</text><text x="670" y="139" text-anchor="middle" class="small">roteamento por caminho</text>
+  <path d="M220 120 H280" class="arrow"/><path d="M500 120 H560" class="arrow"/>
+
+  <rect x="35" y="205" width="410" height="610" rx="18" class="node"/><rect x="35" y="205" width="410" height="55" rx="18" fill="#2563eb"/><text x="240" y="240" text-anchor="middle" class="head">k3d-aps-agent-0</text>
+  <rect x="495" y="205" width="410" height="610" rx="18" class="node"/><rect x="495" y="205" width="410" height="55" rx="18" fill="#2563eb"/><text x="700" y="240" text-anchor="middle" class="head">k3d-aps-agent-1</text>
+  <rect x="955" y="205" width="410" height="610" rx="18" class="node"/><rect x="955" y="205" width="410" height="55" rx="18" fill="#2563eb"/><text x="1160" y="240" text-anchor="middle" class="head">k3d-aps-server-0</text>
+
+  <g class="txt" text-anchor="middle">
+    <rect x="75" y="310" width="330" height="80" rx="12" class="api"/><text x="240" y="345">Manancial — réplica A</text><text x="240" y="370" class="small">Deployment sem estado</text>
+    <rect x="75" y="430" width="330" height="80" rx="12" class="api"/><text x="240" y="465">Alagamento — réplica A</text><text x="240" y="490" class="small">Deployment sem estado</text>
+    <rect x="75" y="550" width="330" height="80" rx="12" class="api"/><text x="240" y="585">Inversão — réplica A</text><text x="240" y="610" class="small">Deployment sem estado</text>
+    <rect x="535" y="310" width="330" height="80" rx="12" class="api"/><text x="700" y="345">Manancial — réplica B</text><text x="700" y="370" class="small">Deployment sem estado</text>
+    <rect x="535" y="430" width="330" height="80" rx="12" class="api"/><text x="700" y="465">Alagamento — réplica B</text><text x="700" y="490" class="small">Deployment sem estado</text>
+    <rect x="535" y="550" width="330" height="80" rx="12" class="api"/><text x="700" y="585">Inversão — réplica B</text><text x="700" y="610" class="small">Deployment sem estado</text>
+    <rect x="995" y="285" width="330" height="75" rx="12" class="state"/><text x="1160" y="315">manancial-estado-0</text><text x="1160" y="340" class="small">SQLite + PVC 1 GiB</text>
+    <rect x="995" y="385" width="330" height="75" rx="12" class="state"/><text x="1160" y="415">alagamento-estado-0</text><text x="1160" y="440" class="small">SQLite + PVC 1 GiB</text>
+    <rect x="995" y="485" width="330" height="75" rx="12" class="state"/><text x="1160" y="515">inversao-termica-estado-0</text><text x="1160" y="540" class="small">SQLite + PVC 1 GiB</text>
+    <rect x="995" y="610" width="150" height="80" rx="12" class="infra"/><text x="1070" y="645">Redis</text><text x="1070" y="670" class="small">cache + PVC</text>
+    <rect x="1175" y="610" width="150" height="80" rx="12" class="infra"/><text x="1250" y="645">RabbitMQ</text><text x="1250" y="670" class="small">fila + PVC</text>
+    <text x="1160" y="755">Plano de controle k3s + armazenamento</text>
+  </g>
+  <path d="M670 155 V185 H240 V310" class="arrow"/><path d="M670 185 H700 V310" class="arrow"/>
+  <path d="M405 350 H995" class="arrow"/><path d="M865 350 H995" class="arrow"/>
+  <path d="M405 470 H920 V422 H995" class="arrow"/><path d="M865 470 H920 V422 H995" class="arrow"/>
+  <path d="M405 590 H930 V522 H995" class="arrow"/><path d="M865 590 H930 V522 H995" class="arrow"/>
+  <text x="700" y="850" text-anchor="middle" class="small">Services internos fornecem DNS estável; o Ingress distribui as requisições e os StatefulSets preservam os dados.</text>
+</svg>

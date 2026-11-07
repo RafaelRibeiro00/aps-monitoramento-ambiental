@@ -1,0 +1,288 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: manancial-estado
+  namespace: aps
+spec:
+  clusterIP: None
+  selector:
+    app: manancial-estado
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alagamento-estado
+  namespace: aps
+spec:
+  clusterIP: None
+  selector:
+    app: alagamento-estado
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inversao-termica-estado
+  namespace: aps
+spec:
+  clusterIP: None
+  selector:
+    app: inversao-termica-estado
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: manancial-estado
+  namespace: aps
+spec:
+  serviceName: manancial-estado
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manancial-estado
+  template:
+    metadata:
+      labels:
+        app: manancial-estado
+        camada: estado
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k3d-aps-server-0
+      securityContext:
+        fsGroup: 10001
+      terminationGracePeriodSeconds: 40
+      initContainers:
+        - name: permissoes
+          image: busybox:1.37
+          command: ["sh", "-c", "chown 10001:10001 /dados"]
+          volumeMounts:
+            - name: dados
+              mountPath: /dados
+      containers:
+        - name: api
+          image: aps-manancial:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: aps-config
+            - secretRef:
+                name: aps-segredos
+          env:
+            - name: APS_PORT
+              value: "8081"
+            - name: APS_DB
+              value: /app/dados/aps.db
+            - name: APS_VERSAO
+              value: "3.0.0"
+            - name: ALERTA_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: MANANCIAL_WEBHOOK_URL }
+            - name: ALERTA_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: MANANCIAL_WEBHOOK_TOKEN }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: JAVA_TOOL_OPTIONS
+              value: -Xms16m -Xmx96m -Xss256k -XX:ActiveProcessorCount=2
+          ports:
+            - containerPort: 8081
+          startupProbe: &startup-manancial
+            httpGet: { path: /health/live, port: 8081 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe: &live-manancial
+            httpGet: { path: /health/live, port: 8081 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe: &ready-manancial
+            httpGet: { path: /health/ready, port: 8081 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources: &estado-resources
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 320Mi }
+          volumeMounts:
+            - name: dados
+              mountPath: /app/dados
+  volumeClaimTemplates:
+    - metadata:
+        name: dados
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alagamento-estado
+  namespace: aps
+spec:
+  serviceName: alagamento-estado
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alagamento-estado
+  template:
+    metadata:
+      labels:
+        app: alagamento-estado
+        camada: estado
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k3d-aps-server-0
+      securityContext:
+        fsGroup: 10001
+      terminationGracePeriodSeconds: 40
+      initContainers:
+        - name: permissoes
+          image: busybox:1.37
+          command: ["sh", "-c", "chown 10001:10001 /dados"]
+          volumeMounts:
+            - name: dados
+              mountPath: /dados
+      containers:
+        - name: api
+          image: aps-alagamento:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: aps-config }
+            - secretRef: { name: aps-segredos }
+          env:
+            - { name: APS_PORT, value: "8082" }
+            - { name: APS_DB, value: /app/dados/aps.db }
+            - { name: APS_VERSAO, value: "3.0.0" }
+            - name: ALERTA_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: ALAGAMENTO_WEBHOOK_URL }
+            - name: ALERTA_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: ALAGAMENTO_WEBHOOK_TOKEN }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xms16m -Xmx96m -Xss256k -XX:ActiveProcessorCount=2" }
+          ports:
+            - { containerPort: 8082 }
+          startupProbe:
+            httpGet: { path: /health/live, port: 8082 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8082 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8082 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 320Mi }
+          volumeMounts:
+            - { name: dados, mountPath: /app/dados }
+  volumeClaimTemplates:
+    - metadata: { name: dados }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests: { storage: 1Gi }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: inversao-termica-estado
+  namespace: aps
+spec:
+  serviceName: inversao-termica-estado
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inversao-termica-estado
+  template:
+    metadata:
+      labels:
+        app: inversao-termica-estado
+        camada: estado
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k3d-aps-server-0
+      securityContext:
+        fsGroup: 10001
+      terminationGracePeriodSeconds: 40
+      initContainers:
+        - name: permissoes
+          image: busybox:1.37
+          command: ["sh", "-c", "chown 10001:10001 /dados"]
+          volumeMounts:
+            - name: dados
+              mountPath: /dados
+      containers:
+        - name: api
+          image: aps-inversao-termica:3.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: aps-config }
+            - secretRef: { name: aps-segredos }
+          env:
+            - { name: APS_PORT, value: "8083" }
+            - { name: APS_DB, value: /app/dados/aps.db }
+            - { name: APS_VERSAO, value: "3.0.0" }
+            - name: ALERTA_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: INVERSAO_TERMICA_WEBHOOK_URL }
+            - name: ALERTA_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef: { name: aps-segredos, key: INVERSAO_TERMICA_WEBHOOK_TOKEN }
+            - name: POD_NAME
+              valueFrom:
+                fieldRef: { fieldPath: metadata.name }
+            - { name: JAVA_TOOL_OPTIONS, value: "-Xms16m -Xmx96m -Xss256k -XX:ActiveProcessorCount=2" }
+          ports:
+            - { containerPort: 8083 }
+          startupProbe:
+            httpGet: { path: /health/live, port: 8083 }
+            periodSeconds: 3
+            failureThreshold: 40
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8083 }
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8083 }
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 320Mi }
+          volumeMounts:
+            - { name: dados, mountPath: /app/dados }
+  volumeClaimTemplates:
+    - metadata: { name: dados }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests: { storage: 1Gi }

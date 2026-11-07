@@ -152,7 +152,7 @@ def main(docker=False):
                     for chave,valor in ambiente.items():
                         if chave in ("APS_PORT",) or chave.startswith("ALERTA_"):
                             comando.extend(["-e",chave+"="+valor])
-                    comando.extend(["-e","APS_HOST=0.0.0.0","-e","APS_DB=/app/dados/aps.db","aps-"+nome+":"+os.environ.get("APS_TEST_IMAGE_TAG","2.0.0")])
+                    comando.extend(["-e","APS_HOST=0.0.0.0","-e","APS_DB=/app/dados/aps.db","aps-"+nome+":"+os.environ.get("APS_TEST_IMAGE_TAG","3.0.0")])
                 else:
                     comando=[java,"-Dfile.encoding=UTF-8","-cp",str(target/"classes")+os.pathsep+str(target/"dependency"/"*"),"br.edu.aps."+pacote+".Api"]
                 processo=subprocess.Popen(comando,cwd=RAIZ,env=ambiente,stdout=log,stderr=subprocess.STDOUT)

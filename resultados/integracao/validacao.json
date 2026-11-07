@@ -1,19 +1,19 @@
 {
-  "inicio": "2026-11-05T16:32:34+00:00",
-  "identificador": "INTEGRACAO-a23fa3b35b",
+  "inicio": "2026-11-07T04:30:54+00:00",
+  "identificador": "INTEGRACAO-93a595a4a2",
   "servicos": {
     "manancial": {
       "post": 202,
       "sse": true,
       "historico": true,
       "alertas": true,
-      "evento_id": "1e28a1c4-df19-4fbb-94bd-8ec25fb6654e",
+      "evento_id": "b043fc8d-621f-437b-855d-a1f7d4763c83",
       "headers": {
         "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
         "Content-Type": "application/json; charset=utf-8",
-        "Date": "Thu, 05 Nov 2026 16:32:34 GMT",
+        "Date": "Sat, 07 Nov 2026 04:30:56 GMT",
         "X-Backend-Pod": "manancial-estado-0",
-        "X-Pod": "manancial-7c5dc897d-t25gk",
+        "X-Pod": "manancial-5975cf68-n956j",
         "X-Versao": "3.0.0",
         "Connection": "close",
         "Transfer-Encoding": "chunked"
@@ -24,13 +24,13 @@
       "sse": true,
       "historico": true,
       "alertas": true,
-      "evento_id": "7b4fe2a2-71d9-4af1-9a31-7d036e8c15f6",
+      "evento_id": "14e8eeb1-089d-40b4-8f38-bd40c3ef8244",
       "headers": {
         "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
         "Content-Type": "application/json; charset=utf-8",
-        "Date": "Thu, 05 Nov 2026 16:32:35 GMT",
+        "Date": "Sat, 07 Nov 2026 04:30:57 GMT",
         "X-Backend-Pod": "alagamento-estado-0",
-        "X-Pod": "alagamento-8555cd7897-k684r",
+        "X-Pod": "alagamento-7fc96cd464-c8zg6",
         "X-Versao": "3.0.0",
         "Connection": "close",
         "Transfer-Encoding": "chunked"
@@ -41,13 +41,13 @@
       "sse": true,
       "historico": true,
       "alertas": true,
-      "evento_id": "4002ef77-815f-413a-8844-d7acd791aa31",
+      "evento_id": "59a1fe06-3b1d-44fd-a504-a8a229bfe1ed",
       "headers": {
         "Access-Control-Expose-Headers": "X-Pod, X-Versao, X-Backend-Pod",
         "Content-Type": "application/json; charset=utf-8",
-        "Date": "Thu, 05 Nov 2026 16:32:36 GMT",
+        "Date": "Sat, 07 Nov 2026 04:30:58 GMT",
         "X-Backend-Pod": "inversao-termica-estado-0",
-        "X-Pod": "inversao-termica-5f6586b599-lg2z6",
+        "X-Pod": "inversao-termica-64b466bb9b-zgtbb",
         "X-Versao": "3.0.0",
         "Connection": "close",
         "Transfer-Encoding": "chunked"
@@ -55,8 +55,8 @@
     }
   },
   "distribuicao": [
-    "manancial-7c5dc897d-77rjz",
-    "manancial-7c5dc897d-t25gk"
+    "manancial-5975cf68-c8s6l",
+    "manancial-5975cf68-n956j"
   ],
   "persistencia_apos_restart": true
 }

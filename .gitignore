@@ -27,6 +27,9 @@ __pycache__/
 desktop.ini
 *.fila-*/
 
+# Backup local da implantação Kind e evidências históricas (grande; não enviar ao GitHub)
+/backup/
+
 # Resultados brutos são preservados localmente e versionados no arquivo tar.gz.
 # Resumos JSON, relatórios, gráficos e o arquivo compactado continuam rastreáveis.
 resultados/**/carga-requisicoes.csv

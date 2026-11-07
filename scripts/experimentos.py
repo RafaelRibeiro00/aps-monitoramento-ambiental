@@ -1,4 +1,4 @@
-"""Experimentos locais reproduzíveis. Usa somente o contexto kind-aps-experimentos."""
+"""Experimentos locais reproduzíveis no cluster k3d/k3s da APS."""
 import argparse
 import datetime as dt
 import json
@@ -11,8 +11,8 @@ import time
 import urllib.request
 
 ROOT=Path(__file__).resolve().parents[1]
-CONTEXT='kind-aps-experimentos'
-NAMESPACE='aps-lab'
+CONTEXT='k3d-aps'
+NAMESPACE='aps'
 BASE='http://127.0.0.1:8088'
 OUT=ROOT/'resultados'
 
@@ -108,7 +108,7 @@ def main():
         for n in [1,2,4,8]:
             replicas(n);run(f'manual/{n}-replicas',c=32,duration=35)
     if enabled('hpa'):
-        replicas(2);k('apply','-f',str(ROOT/'k8s/hpa.json'))
+        replicas(2);k('apply','-f',str(ROOT/'k8s/40-hpa.yaml'))
         run('hpa/rampa',c=64,duration=180,ramp=120)
         folder=OUT/'hpa/rampa'
         for _ in range(24):
@@ -121,7 +121,7 @@ def main():
             event(folder,'pod_escolhido',pod=name)
             return k('delete','pod',name,'--wait=false')
         run('falhas/pod',duration=60,c=24,action=delete)
-        node='aps-experimentos-worker'
+        node='k3d-aps-agent-0'
         # PDB minAvailable=1 de outros serviços também participa da drenagem.
         for service in ['alagamento','inversao-termica']:
             k('scale','deployment/'+service,'--replicas=2');ready('deployment/'+service)
@@ -147,7 +147,7 @@ def main():
         ready()
         try: run('update/sem-prestop',duration=70,c=24,action=update)
         finally:
-            k('apply','-f',str(ROOT/'k8s/aplicacao.json'));ready()
+            k('apply','-f',str(ROOT/'k8s/20-apis.yaml'));ready()
     if enabled('assincrono'):
         replicas(1)
         for mode in ['sincrona','assincrona']:

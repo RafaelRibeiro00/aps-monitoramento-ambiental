@@ -190,8 +190,8 @@ def main():
     out+=['\n## Evidências e limites\n',
           'Cada pasta contém comando e parâmetros, CSV por requisição, série por segundo, resumo JSON, gráficos e observações Kubernetes com horário. '
           'eventos.jsonl registra CPU/memória, pods, HPA, intervenções e total persistido antes/depois. '
-          'ambiente.txt registra a configuração do cluster. Os nós kind compartilham a mesma máquina física. '
-          'O nó drenado é um worker; não demonstra tolerância à perda do nó que armazena SQLite. '
+          'ambiente.txt registra a configuração do cluster. Os nós k3d/k3s compartilham a mesma máquina física. '
+          'O nó drenado é um agente; não demonstra tolerância à perda do server-0 que armazena SQLite. '
           'O coordenador permanece um ponto único e o volume local não migra entre nós. '
           'Nenhuma medição desta entrega representa capacidade de produção.']
     (root/'RELATORIO.md').write_text('\n'.join(out),encoding='utf-8')
