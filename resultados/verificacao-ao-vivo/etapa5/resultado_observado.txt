@@ -1,0 +1,23 @@
+RESULTADO OBSERVADO - ETAPA 5
+Data: 2026-11-12T19:04:09-03:00
+
+1. Escala manual
+Comando: kubectl scale deployment/manancial --replicas=1 e --replicas=4
+1 réplica: 33.14 req/s | p95 1497.95 ms
+4 réplicas: 110.43 req/s | p95 318.63 ms
+Ganho medido: 3.33x
+
+
+2. Pod apagado
+Comando: kubectl delete pod manancial-76b798758f-28jqr --wait=false
+Falhas observadas: 0
+Requisições durante o teste: 3426
+
+
+3. Rolling update
+Comando: kubectl set image deployment/manancial api=aps-manancial:3.0.1
+Versões vistas: {'3.0.0': 2873, '3.0.1': 1324}
+Falhas observadas: 0
+
+
+CSV: C:\Users\Rafae\Downloads\Etapa5\requisicoes.csv

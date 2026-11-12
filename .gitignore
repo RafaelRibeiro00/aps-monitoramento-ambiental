@@ -40,3 +40,7 @@ resultados/**/ambiente.txt
 
 # Artefatos temporários usados para renderizar e revisar documentos Word.
 /tmp-documentacao-k3d/
+/.tmp_docs/
+/tmp/
+~$*
+*.inspect.ndjson

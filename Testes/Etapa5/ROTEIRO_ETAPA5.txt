@@ -1,0 +1,310 @@
+ROTEIRO DE APRESENTACAO - ETAPA 5
+Experimentos de escalabilidade e resiliencia
+
+============================================================
+1. ABERTURA
+============================================================
+
+FALA:
+
+"Na Etapa 5, usamos o gerador de carga da etapa anterior para observar como o
+sistema se comporta quando aumentamos a quantidade de pods, quando ocorre uma
+falha e quando publicamos uma nova versao. O objetivo nao e apenas verificar se
+a API responde, mas medir vazao, latencia, erros e o tempo de recuperacao do
+Kubernetes."
+
+"O ambiente usa Docker Desktop, um cluster k3d com k3s, tres nos Kubernetes e
+um Ingress na porta 8088. O Manancial foi escolhido como servico principal dos
+experimentos de escala."
+
+COMANDOS PARA MOSTRAR O AMBIENTE:
+
+docker ps
+kubectl get nodes
+kubectl get pods -n aps -o wide
+kubectl get hpa -n aps
+
+FALA:
+
+"No Docker aparecem quatro conteineres do k3d. O server-0 e o plano de controle,
+os agents 0 e 1 executam as cargas de trabalho, e o serverlb publica a API do
+Kubernetes e o Ingress. Dentro desses conteineres estao os pods das APIs, dos
+bancos, do Redis e do RabbitMQ."
+
+============================================================
+2. INICIAR A DEMONSTRACAO AO VIVO
+============================================================
+
+COMANDOS:
+
+cd C:\Users\Rafae\Downloads\Etapa5
+py experimentos_etapa5.py
+
+FALA:
+
+"Este script executa os tres testes pedidos na verificacao ao vivo. Ele mede o
+Manancial com uma e quatro replicas, apaga um pod durante a carga e publica a
+versao 3.0.1 enquanto os clientes continuam enviando requisicoes. No final, ele
+gera requisicoes.csv e resultado_observado.txt nesta mesma pasta."
+
+"Antes do experimento, o script guarda a configuracao do HPA e o remove
+temporariamente. Isso e necessario porque o HPA nao pode alterar sozinho a
+quantidade de replicas durante um teste de escala manual. Ao terminar, o script
+restaura duas replicas, a imagem 3.0.0 e o HPA."
+
+============================================================
+3. EXPERIMENTO 1 - ESCALA MANUAL
+============================================================
+
+O QUE O SCRIPT FAZ:
+
+1. Executa o Manancial com uma replica.
+2. Envia carga com 16 trabalhadores durante 20 segundos.
+3. Altera o Deployment para quatro replicas.
+4. Repete exatamente a mesma carga.
+5. Compara vazao e p95.
+
+COMANDO PRINCIPAL MOSTRADO PELO SCRIPT:
+
+kubectl scale deployment/manancial --replicas=1
+kubectl scale deployment/manancial --replicas=4
+
+RESULTADO DA ULTIMA EXECUCAO:
+
+1 replica: 33,05 req/s | p95 951,91 ms
+4 replicas: 86,87 req/s | p95 444,03 ms
+Ganho medido: 2,63 vezes
+
+FALA:
+
+"Com uma replica, o sistema respondeu aproximadamente 33 requisicoes por
+segundo. Com quatro replicas, a vazao subiu para aproximadamente 87 requisicoes
+por segundo. Ao mesmo tempo, o p95 caiu de cerca de 952 para 444 milissegundos.
+Isso mostra que os pods dividiram o atendimento e reduziram o tempo de espera."
+
+"Req/s significa requisicoes respondidas por segundo. O p95 significa que 95%
+das requisicoes terminaram naquele tempo ou menos; somente os 5% mais lentos
+demoraram mais."
+
+SE O PROFESSOR PERGUNTAR POR QUE O GANHO NAO FOI 4 VEZES:
+
+"Apenas a camada de atendimento foi multiplicada. O Ingress, o banco, a fila,
+o disco e a CPU da maquina continuam compartilhados. Tambem existe custo de
+comunicacao e balanceamento. Por isso o ganho real foi 2,63 vezes, e nao quatro."
+
+SE O PROFESSOR PERGUNTAR POR QUE 8 REPLICAS NAO DARIAM 8 VEZES:
+
+"Pela Lei de Amdahl, a parte que nao pode ser paralelizada limita o ganho. Mesmo
+com oito pods, o banco unico, o gateway, a fila e a maquina hospedeira continuam
+sendo recursos compartilhados. Depois de certo ponto, criar mais pods aumenta o
+custo e quase nao aumenta a vazao."
+
+PARA A ESCALA COMPLETA PEDIDA NA FICHA:
+
+kubectl scale deployment/manancial --replicas=1
+kubectl scale deployment/manancial --replicas=2
+kubectl scale deployment/manancial --replicas=4
+kubectl scale deployment/manancial --replicas=8
+
+Em cada nivel deve ser usada a mesma rota, a mesma concorrencia e a mesma
+duracao. Depois, comparar req/s, p50, p95, erros e ganho em relacao a uma replica.
+
+============================================================
+4. EXPERIMENTO 2 - POD APAGADO DURANTE A CARGA
+============================================================
+
+O QUE O SCRIPT FAZ:
+
+1. Mantem quatro replicas do Manancial.
+2. Inicia uma carga constante de 35 segundos.
+3. Depois de oito segundos, escolhe e apaga um pod.
+4. Continua enviando requisicoes e conta as falhas.
+
+COMANDO MOSTRADO PELO SCRIPT:
+
+kubectl delete pod NOME_DO_POD --wait=false
+
+RESULTADO DA ULTIMA EXECUCAO:
+
+Requisicoes durante o teste: 3.548
+Falhas observadas: 0
+
+FALA:
+
+"O pod foi apagado propositalmente enquanto a API recebia requisicoes. O Service
+retirou o pod antigo do balanceamento e encaminhou o trafego aos pods restantes.
+Como o Deployment percebeu que havia menos replicas do que o desejado, o
+Kubernetes criou automaticamente um substituto."
+
+"Foram feitas 3.548 requisicoes e nenhuma falhou. Esse resultado demonstra
+balanceamento, resiliencia e autorrecuperacao. A readiness define quando o novo
+pod esta pronto para voltar a receber trafego."
+
+COMANDOS PARA ACOMPANHAR MANUALMENTE:
+
+kubectl get pods -n aps -w
+kubectl get events -n aps --sort-by=.lastTimestamp
+
+============================================================
+5. EXPERIMENTO 3 - ROLLING UPDATE
+============================================================
+
+O QUE O SCRIPT FAZ:
+
+1. Mantem quatro replicas atendendo carga.
+2. Troca a imagem 3.0.0 pela imagem 3.0.1.
+3. Registra o cabecalho X-Versao de cada resposta.
+4. Conta as falhas durante toda a atualizacao.
+
+COMANDO MOSTRADO PELO SCRIPT:
+
+kubectl set image deployment/manancial api=aps-manancial:3.0.1 -n aps
+
+RESULTADO DA ULTIMA EXECUCAO:
+
+Versao 3.0.0: 2.522 respostas
+Versao 3.0.1: 2.064 respostas
+Falhas observadas: 0
+
+FALA:
+
+"No rolling update, o Kubernetes nao derruba todos os pods de uma vez. Ele cria
+pods da versao nova e remove os antigos gradualmente, depois que os novos passam
+pela readiness."
+
+"O cabecalho X-Versao comprovou que as versoes 3.0.0 e 3.0.1 coexistiram durante
+a atualizacao. Foram registradas respostas das duas versoes e nenhuma falha, o
+que demonstra uma publicacao sem indisponibilidade percebida pelo cliente."
+
+COMANDOS PARA MOSTRAR O HISTORICO E DESFAZER A ATUALIZACAO:
+
+kubectl rollout history deployment/manancial -n aps
+kubectl rollout undo deployment/manancial -n aps
+kubectl rollout status deployment/manancial -n aps
+
+FALA SOBRE O ROLLBACK:
+
+"O rollout undo retorna o Deployment para a revisao anterior. Ele usa a mesma
+estrategia gradual do rolling update, permitindo corrigir uma versao com problema
+sem parar toda a API."
+
+============================================================
+6. HPA - ESCALA AUTOMATICA
+============================================================
+
+COMANDOS PARA MOSTRAR:
+
+kubectl get hpa -n aps
+kubectl get hpa -n aps -w
+kubectl top pods -n aps
+
+FALA:
+
+"O HPA do Manancial usa CPU e trabalha com no minimo duas e no maximo dez
+replicas. Durante uma carga crescente, o metrics-server coleta o uso de CPU e o
+HPA calcula quantos pods sao necessarios."
+
+"A escala nao e instantanea. Existe o tempo de coleta das metricas, o ciclo de
+decisao do HPA, o agendamento do pod, a inicializacao da aplicacao, a readiness e
+a atualizacao do Ingress. A subida costuma ser rapida; a reducao e mais lenta por
+causa da janela de estabilizacao."
+
+============================================================
+7. DRENAGEM DE NO
+============================================================
+
+COMANDOS DE REFERENCIA:
+
+kubectl drain k3d-aps-agent-0 --ignore-daemonsets --delete-emptydir-data
+kubectl get pods -n aps -o wide -w
+kubectl uncordon k3d-aps-agent-0
+
+FALA:
+
+"O drain impede novos agendamentos no no e remove seus pods de forma controlada.
+Os Deployments recriam esses pods em outro no disponivel. O PodDisruptionBudget
+limita quantos pods podem ficar indisponiveis ao mesmo tempo. Depois do teste,
+usamos uncordon para permitir novamente o agendamento naquele no."
+
+"O banco exige mais cuidado porque usa volume persistente e StatefulSet. Se o
+volume estiver preso ao no, o pod pode ficar Pending ate o armazenamento estar
+disponivel."
+
+============================================================
+8. CACHE E PROCESSAMENTO ASSINCRONO
+============================================================
+
+FALA:
+
+"O cluster possui Redis para cache e RabbitMQ para mensageria. A comparacao deve
+usar a mesma rota e a mesma carga com e sem cache ou processamento assincrono.
+O objetivo e verificar se a vazao aumenta, se o p95 diminui e se o banco passa a
+consumir menos CPU."
+
+"O cache reduz leituras repetidas no banco, mas pode entregar um dado antigo
+durante o TTL. A fila permite confirmar a recepcao antes de concluir todo o
+processamento, mas exige acompanhar mensagens pendentes e tratar falhas."
+
+============================================================
+9. ARQUIVOS GERADOS
+============================================================
+
+Depois da execucao, mostrar:
+
+C:\Users\Rafae\Downloads\Etapa5\requisicoes.csv
+C:\Users\Rafae\Downloads\Etapa5\resultado_observado.txt
+
+FALA:
+
+"O CSV registra cada requisicao, com horario, latencia, status HTTP, pod e versao.
+O arquivo resultado_observado.txt resume os numeros e ja traz a explicacao de
+cada experimento. Assim, os valores apresentados podem ser conferidos nos dados
+brutos."
+
+============================================================
+10. ENCERRAMENTO
+============================================================
+
+FALA:
+
+"A Etapa 5 mostrou que aumentar replicas melhora a vazao e reduz a latencia, mas
+o ganho nao e linear por causa dos recursos compartilhados. Tambem verificamos
+que o Kubernetes recria pods apagados e consegue atualizar a aplicacao sem parar
+o atendimento. Os resultados foram medidos pelo cliente e confirmados pelos
+pods, eventos, cabecalhos e arquivos CSV."
+
+============================================================
+11. RESPOSTAS CURTAS PARA PERGUNTAS
+============================================================
+
+O que e vazao?
+Quantidade de requisicoes respondidas por segundo.
+
+O que e p95?
+Tempo em que 95% das requisicoes terminaram; somente 5% demoraram mais.
+
+O que e replica?
+Uma copia do pod da aplicacao atendendo o mesmo servico.
+
+O que e HPA?
+Controlador que aumenta ou diminui automaticamente as replicas usando metricas,
+como o consumo de CPU.
+
+O que e readiness?
+Teste que decide se o pod esta pronto para receber trafego do Service.
+
+O que e liveness?
+Teste que verifica se o processo esta vivo e precisa ser reiniciado.
+
+O que e rolling update?
+Troca gradual da versao dos pods, mantendo a aplicacao disponivel.
+
+O que e rollout undo?
+Retorno do Deployment para a revisao anterior.
+
+O que e autorrecuperacao?
+Capacidade do Kubernetes de recriar um pod quando ele e removido ou falha.
+
+Por que mais pods nao resolvem tudo?
+Porque banco, Ingress, fila, disco e maquina hospedeira continuam compartilhados
+e podem se tornar o novo gargalo.

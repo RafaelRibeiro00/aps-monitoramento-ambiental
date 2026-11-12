@@ -1,6 +1,7 @@
 """Carga simultânea nas três APIs do Sistema de Monitoramento Ambiental."""
 
 import argparse
+import atexit
 import concurrent.futures
 import csv
 import datetime as dt
@@ -27,14 +28,95 @@ SERVICOS = {
 
 CONTEXTO_KUBERNETES = "k3d-aps"
 NAMESPACE_KUBERNETES = "aps"
+HPA_MANANCIAL = None
+
+
+def restaurar_hpa():
+    global HPA_MANANCIAL
+    if not HPA_MANANCIAL:
+        return
+    kubectl = shutil.which("kubectl")
+    if kubectl:
+        subprocess.run(
+            [kubectl, "--context", CONTEXTO_KUBERNETES, "-n", NAMESPACE_KUBERNETES,
+             "apply", "-f", "-"],
+            input=json.dumps(HPA_MANANCIAL), text=True, check=True,
+        )
+    HPA_MANANCIAL = None
+
+
+atexit.register(restaurar_hpa)
+
+
+def garantir_api_kubernetes(kubectl):
+    comando = [
+        kubectl,
+        "--context",
+        CONTEXTO_KUBERNETES,
+        "--request-timeout=5s",
+        "get",
+        "--raw=/readyz",
+    ]
+    teste = subprocess.run(comando, capture_output=True, text=True)
+    if teste.returncode == 0 and teste.stdout.strip() == "ok":
+        return
+
+    docker = shutil.which("docker")
+    if not docker:
+        raise RuntimeError(
+            "A API do Kubernetes não respondeu e o comando docker não foi encontrado."
+        )
+
+    print(
+        "A API do Kubernetes não respondeu. Reiniciando o balanceador k3d-aps-serverlb...",
+        flush=True,
+    )
+    subprocess.run([docker, "restart", "k3d-aps-serverlb"], check=True)
+
+    for _ in range(15):
+        time.sleep(2)
+        teste = subprocess.run(comando, capture_output=True, text=True)
+        if teste.returncode == 0 and teste.stdout.strip() == "ok":
+            print("API do Kubernetes pronta.", flush=True)
+            return
+
+    detalhe = (teste.stderr or teste.stdout).strip()
+    raise RuntimeError(f"A API do Kubernetes continuou indisponível: {detalhe}")
 
 
 def preparar_duas_replicas():
+    global HPA_MANANCIAL
     kubectl = shutil.which("kubectl")
     if not kubectl:
         raise RuntimeError("O comando kubectl não foi encontrado no PATH.")
 
-    print("Preparando duas réplicas de cada API...", flush=True)
+    contexto = subprocess.run(
+        [kubectl, "config", "current-context"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    if contexto != CONTEXTO_KUBERNETES:
+        raise RuntimeError(
+            f"Contexto ativo inesperado: {contexto}. Use {CONTEXTO_KUBERNETES}."
+        )
+
+    garantir_api_kubernetes(kubectl)
+
+    hpa = subprocess.run(
+        [kubectl, "--context", CONTEXTO_KUBERNETES, "-n", NAMESPACE_KUBERNETES,
+         "get", "hpa", "manancial", "-o", "json"],
+        capture_output=True, text=True,
+    )
+    if hpa.returncode == 0:
+        HPA_MANANCIAL = json.loads(hpa.stdout)
+        HPA_MANANCIAL.pop("status", None)
+        metadados = HPA_MANANCIAL.get("metadata", {})
+        for chave in ("creationTimestamp", "generation", "resourceVersion", "uid", "managedFields"):
+            metadados.pop(chave, None)
+        subprocess.run(
+            [kubectl, "--context", CONTEXTO_KUBERNETES, "-n", NAMESPACE_KUBERNETES,
+             "delete", "hpa", "manancial"], check=True
+        )
+
+    print("Preparando duas réplicas de cada API no cluster k3d-aps...", flush=True)
     for servico in SERVICOS:
         subprocess.run(
             [
@@ -326,6 +408,7 @@ def executar(url_base, concorrencia_por_api, duracao, timeout):
     print(f"Pod: {mais_lenta['pod'] or 'não informado'}")
     print(f"Início: {mais_lenta['inicio']}")
     print(f"Arquivo CSV: {arquivo_csv}")
+    restaurar_hpa()
 
 
 def main():

@@ -40,6 +40,15 @@ if ($clusters.name -notcontains $cluster) {
 kubectl config use-context $contexto | Out-Null
 Verificar 'selecionar contexto k3d-aps'
 
+# No Windows, o k3d pode gravar 0.0.0.0 no kubeconfig. Esse endereco e
+# apropriado para escuta, mas pode travar o handshake TLS do kubectl.
+# Mantemos a porta gerada pelo k3d e usamos o endereco local de conexao.
+$servidorApi = kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'
+Verificar 'ler endereco do API Server'
+$portaApi = ([Uri]$servidorApi).Port
+kubectl config set-cluster $contexto --server="https://127.0.0.1:$portaApi" | Out-Null
+Verificar 'normalizar endereco local do API Server'
+
 foreach ($servico in @('manancial','alagamento','inversao-termica')) {
     if (-not $SemBuild) {
         docker build -t "aps-${servico}:3.0.0" "./servicos/$servico"
